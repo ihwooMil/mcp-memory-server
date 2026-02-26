@@ -241,16 +241,16 @@ class TestMemoryAgent:
     def test_retrieves_on_question_with_stored_memory(self):
         agent = MemoryAgent(seed=0)
         store = MemoryStore()
-        # Add a memory
+        # Add a memory with multiple overlapping keywords
         from aimemory.schemas import MemoryEntry
         store.add(MemoryEntry(
-            content="사용자는 Python을 좋아함",
+            content="사용자는 Python 개발 경험이 풍부함",
             source_turn_id=0,
-            keywords=["Python"],
-            category="preference",
+            keywords=["Python", "개발", "경험"],
+            category="technical",
         ))
-        # Ask a question referencing the stored topic
-        turn = self._make_turn(2, Role.USER, "Python에 대해 더 알고 싶은데요?")
+        # Question with 3+ keyword overlap → save suppressed, retrieve triggered
+        turn = self._make_turn(2, Role.USER, "Python 개발 경험에 대해 더 알고 싶은데요?")
         decision = agent.decide(turn, store, [turn])
         assert decision.action == MemoryActionType.RETRIEVE
         assert len(decision.retrieved_memories) >= 1
@@ -488,18 +488,19 @@ class TestA3RetrieveTriggerExpansion:
 
     def test_retrieve_on_keyword_overlap(self):
         agent = MemoryAgent(seed=0)
-        # Store with Python and pandas
-        store = self._make_store_with_entry(["Python", "pandas"])
-        # User turn mentioning both Python and pandas (2+ overlap)
-        turn = self._make_turn(2, Role.USER, "Python과 pandas를 같이 쓰는 방법이 궁금해요.")
+        # Store with 3+ overlapping keywords to suppress save and trigger retrieve
+        store = self._make_store_with_entry(["Python", "pandas", "데이터", "분석"])
+        # User turn mentioning 3+ keywords → save suppressed, retrieve triggered
+        turn = self._make_turn(2, Role.USER, "Python과 pandas로 데이터 분석하는 방법이 궁금해요.")
         decision = agent.decide(turn, store, [turn])
         assert decision.action == MemoryActionType.RETRIEVE
 
     def test_retrieve_on_discourse_marker(self):
         agent = MemoryAgent(seed=0)
-        store = self._make_store_with_entry(["Python", "데이터"])
-        # User turn with discourse marker "아 맞다" and keywords
-        turn = self._make_turn(2, Role.USER, "아 맞다, Python 프로젝트 얘기 했었죠.")
+        # Store with 3+ overlapping keywords
+        store = self._make_store_with_entry(["Python", "프로젝트", "개발"])
+        # User turn with discourse marker "아 맞다" and 3+ keyword overlap
+        turn = self._make_turn(2, Role.USER, "아 맞다, Python 프로젝트 개발 얘기 했었죠.")
         decision = agent.decide(turn, store, [turn])
         assert decision.action == MemoryActionType.RETRIEVE
 

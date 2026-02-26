@@ -288,11 +288,52 @@ class MemoryAgent:
         has_preference = any(p.search(turn.content) for p in _PREFERENCE_PATTERNS)
         has_tech = bool(_TECH_KEYWORDS.search(turn.content))
 
-        # ── Retrieve decision ──────────────────────────────────────────
-        # A3: RETRIEVE when: question, OR keyword overlap ≥ 2, OR discourse marker
+        # ── Save decision (evaluated BEFORE retrieve) ─────────────────
+        # Save if: personal info / preference / technical / emotion / keywords
+        # Evaluating save first ensures sufficient SAVE ratio for RL training.
+        should_save = False
+        save_reason = ""
         has_discourse_marker = any(marker in turn.content for marker in DISCOURSE_MARKERS)
+
+        if has_personal:
+            should_save = True
+            save_reason = "개인 정보 발화 감지"
+        elif has_preference:
+            should_save = True
+            save_reason = "선호도/취향 정보 감지"
+        elif has_tech and len(keywords) >= 1:
+            should_save = True
+            save_reason = f"기술 관련 정보 감지 (키워드: {keywords[:3]})"
+        elif has_emotion:
+            if self._rng.random() < 0.90:
+                should_save = True
+                save_reason = "감정/경험 발화 감지"
+        elif keywords and len(keywords) >= 2:
+            # High-keyword content: save with high probability
+            if self._rng.random() < 0.80:
+                should_save = True
+                save_reason = "키워드 다수 포함 발화"
+        elif keywords:
+            # Some keywords: save with moderate probability
+            if self._rng.random() < 0.55:
+                should_save = True
+                save_reason = "키워드 포함 발화 (확률적 저장)"
+
+        # If save is triggered but memory_store already has very similar content, skip
+        if should_save and len(memory_store) > 0 and keywords:
+            query_set = {kw.lower() for kw in keywords}
+            max_overlap = 0
+            for entry in memory_store.entries:
+                entry_set = {kw.lower() for kw in entry.keywords}
+                overlap = len(query_set & entry_set)
+                max_overlap = max(max_overlap, overlap)
+            # If 2+ keywords overlap with existing memory, convert to RETRIEVE instead
+            if max_overlap >= 2:
+                should_save = False
+
+        # ── Retrieve decision ──────────────────────────────────────────
         has_keyword_overlap = False
-        if keywords and len(memory_store) > 0:
+        if not should_save and keywords and len(memory_store) > 0:
             query_set = {kw.lower() for kw in keywords}
             for entry in memory_store.entries:
                 entry_set = {kw.lower() for kw in entry.keywords}
@@ -300,40 +341,15 @@ class MemoryAgent:
                     has_keyword_overlap = True
                     break
 
-        if (is_question or has_keyword_overlap or has_discourse_marker) and keywords and len(memory_store) > 0:
+        if not should_save and (is_question or has_keyword_overlap or has_discourse_marker) and keywords and len(memory_store) > 0:
             retrieved = memory_store.retrieve_relevant(keywords)
             if retrieved:
                 return MemoryDecision(
                     turn_id=turn.turn_id,
                     action=MemoryActionType.RETRIEVE,
                     retrieved_memories=retrieved,
-                    reasoning=f"질문 감지 + 관련 기억 {len(retrieved)}건 검색됨 (키워드: {keywords[:3]})",
+                    reasoning=f"관련 기억 {len(retrieved)}건 검색됨 (키워드: {keywords[:3]})",
                 )
-
-        # ── Save decision ──────────────────────────────────────────────
-        # Save if: personal info / preference / technical content with keywords
-        should_save = False
-        save_reason = ""
-
-        if has_personal and not is_question:
-            should_save = True
-            save_reason = "개인 정보 발화 감지"
-        elif has_preference and not is_question:
-            should_save = True
-            save_reason = "선호도/취향 정보 감지"
-        elif has_tech and len(keywords) >= 1 and not is_question:
-            should_save = True
-            save_reason = f"기술 관련 정보 감지 (키워드: {keywords[:3]})"
-        elif has_emotion and not is_question:
-            # Probabilistic: save 85% of emotional statements
-            if self._rng.random() < 0.85:
-                should_save = True
-                save_reason = "감정/경험 발화 감지"
-        elif keywords and not is_question:
-            # Probabilistic: save 60% of other content with keywords
-            if self._rng.random() < 0.6:
-                should_save = True
-                save_reason = "키워드 포함 발화 (확률적 저장)"
 
         if should_save:
             # If no keywords from regex, extract from Korean morphemes as fallback
