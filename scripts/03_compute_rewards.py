@@ -20,7 +20,10 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -201,16 +204,29 @@ def main() -> None:
 
     for jsonl_file in jsonl_files:
         if args.in_place:
-            out_path = jsonl_file
+            # Write to a temp file first, then replace the original
+            tmp_fd, tmp_path_str = tempfile.mkstemp(
+                suffix=".jsonl", dir=str(jsonl_file.parent)
+            )
+            os.close(tmp_fd)
+            tmp_path = Path(tmp_path_str)
+            out_path = tmp_path
         else:
             out_path = output_dir / jsonl_file.name.replace(
                 ".jsonl", "_rewarded.jsonl"
             )
+            tmp_path = None
 
         logger.info("Processing %s → %s", jsonl_file.name, out_path.name)
         n_processed, n_errors = compute_rewards_for_file(jsonl_file, out_path, calculator)
         total_processed += n_processed
         total_errors += n_errors
+
+        if tmp_path is not None and n_processed > 0:
+            shutil.move(str(tmp_path), str(jsonl_file))
+        elif tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)
+
         logger.info(
             "  %s: %d episodes processed, %d errors",
             jsonl_file.name, n_processed, n_errors,

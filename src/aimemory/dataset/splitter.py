@@ -61,11 +61,6 @@ class EpisodeSplitter:
     from the same episode go into the same split).
     """
 
-    # Target counts for each split
-    TARGET_TRAIN = 800
-    TARGET_VAL = 100
-    TARGET_TEST = 100
-
     def __init__(self, config: DatasetConfig | None = None) -> None:
         self.config = config or DatasetConfig()
 
@@ -76,6 +71,7 @@ class EpisodeSplitter:
         """Split episode IDs into train/val/test sets.
 
         Uses stratified sampling by scenario type to maintain class balance.
+        Split sizes are determined purely by config ratios (default 80/10/10).
 
         Args:
             episodes: List of all episodes to split.
@@ -94,11 +90,10 @@ class EpisodeSplitter:
         if total == 0:
             return EpisodeSplitResult(train=[], val=[], test=[])
 
-        # Determine target counts
-        n_train = min(self.TARGET_TRAIN, int(total * self.config.train_ratio))
-        n_val = min(self.TARGET_VAL, int(total * self.config.val_ratio))
+        # Determine target counts from ratios
+        n_train = int(total * self.config.train_ratio)
+        n_val = int(total * self.config.val_ratio)
         n_test = total - n_train - n_val
-        n_test = max(0, n_test)
 
         logger.info(
             "Splitting %d episodes → train=%d, val=%d, test=%d",
@@ -131,10 +126,9 @@ class EpisodeSplitter:
         rng.shuffle(val_ids)
         rng.shuffle(test_ids)
 
-        # Trim to targets if over
+        # Trim to target counts (handles rounding across scenarios)
         train_ids = train_ids[:n_train]
         val_ids = val_ids[:n_val]
-        test_ids = test_ids[:n_test]
 
         return EpisodeSplitResult(train=train_ids, val=val_ids, test=test_ids)
 
