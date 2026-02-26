@@ -296,7 +296,7 @@ class MemoryAgent:
             query_set = {kw.lower() for kw in keywords}
             for entry in memory_store.entries:
                 entry_set = {kw.lower() for kw in entry.keywords}
-                if len(query_set & entry_set) >= 2:
+                if len(query_set & entry_set) >= 1:
                     has_keyword_overlap = True
                     break
 
@@ -321,17 +321,17 @@ class MemoryAgent:
         elif has_preference and not is_question:
             should_save = True
             save_reason = "선호도/취향 정보 감지"
-        elif has_tech and len(keywords) >= 2 and not is_question:
+        elif has_tech and len(keywords) >= 1 and not is_question:
             should_save = True
             save_reason = f"기술 관련 정보 감지 (키워드: {keywords[:3]})"
         elif has_emotion and not is_question:
-            # Probabilistic: save 70% of emotional statements
-            if self._rng.random() < 0.7:
+            # Probabilistic: save 85% of emotional statements
+            if self._rng.random() < 0.85:
                 should_save = True
                 save_reason = "감정/경험 발화 감지"
         elif keywords and not is_question:
-            # Probabilistic: save 40% of other content with keywords
-            if self._rng.random() < 0.4:
+            # Probabilistic: save 60% of other content with keywords
+            if self._rng.random() < 0.6:
                 should_save = True
                 save_reason = "키워드 포함 발화 (확률적 저장)"
 
