@@ -93,16 +93,49 @@ class DatasetConfig(BaseModel):
     random_seed: int = 42
 
 
+class ExtractorConfig(BaseModel):
+    """DQN feature extractor configuration."""
+
+    # Model architecture
+    emb_dim: int = 768
+    proj_dim: int = 128
+    hand_dim: int = 10
+    trunk_dim: int = 128
+    n_actions: int = 3
+    feature_dim: int = 64
+    dropout: float = 0.1
+
+    # Training hyperparameters
+    batch_size: int = 512
+    lr: float = 3e-4
+    gamma: float = 0.99
+    target_sync: int = 1000
+    max_epochs: int = 20
+    patience: int = 3
+    max_grad_norm: float = 1.0
+    epsilon: float = 0.1
+
+    # Class weights for imbalanced actions
+    class_weights: dict[int, float] = Field(
+        default_factory=lambda: {0: 1.0, 1: 0.7, 2: 3.0}
+    )
+
+    # Sentence-transformer model
+    st_model: str = "jhgan/ko-sroberta-multitask"
+
+
 class DataPaths(BaseModel):
     """Data directory paths."""
 
     root: Path = PROJECT_ROOT / "data"
     raw_episodes: Path = PROJECT_ROOT / "data" / "raw" / "episodes"
     splits: Path = PROJECT_ROOT / "data" / "splits"
+    embeddings: Path = PROJECT_ROOT / "data" / "embeddings"
 
     def ensure_dirs(self) -> None:
         self.raw_episodes.mkdir(parents=True, exist_ok=True)
         self.splits.mkdir(parents=True, exist_ok=True)
+        self.embeddings.mkdir(parents=True, exist_ok=True)
 
 
 class AppConfig(BaseModel):
@@ -112,5 +145,6 @@ class AppConfig(BaseModel):
     selfplay: SelfPlayConfig = Field(default_factory=SelfPlayConfig)
     reward: RewardConfig = Field(default_factory=RewardConfig)
     dataset: DatasetConfig = Field(default_factory=DatasetConfig)
+    extractor: ExtractorConfig = Field(default_factory=ExtractorConfig)
     paths: DataPaths = Field(default_factory=DataPaths)
     num_episodes: int = 1000
