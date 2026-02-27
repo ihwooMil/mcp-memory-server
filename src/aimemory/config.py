@@ -71,12 +71,12 @@ class RewardConfig(BaseModel):
         "r2_repeated_question_penalty": 1.0,
         "r3_efficiency": 0.8,
         "r4_retrieval_relevance": 1.2,
-        "r5_speech_act_weight": 0.7,
-        "r6_self_reference": 0.7,
-        "r7_info_density": 0.5,
-        "r8_preference_constraint": 0.9,
-        "r9_emotional_salience": 0.4,
-        "r10_topic_boundary": 0.6,
+        "r5_speech_act_weight": 1.0,
+        "r6_self_reference": 1.0,
+        "r7_info_density": 0.8,
+        "r8_preference_constraint": 1.2,
+        "r9_emotional_salience": 0.6,
+        "r10_topic_boundary": 1.0,
         "r11_user_feedback": 1.0,
     })
     proper_noun_multiplier: float = 3.0
@@ -93,34 +93,31 @@ class DatasetConfig(BaseModel):
     random_seed: int = 42
 
 
-class ExtractorConfig(BaseModel):
-    """DQN feature extractor configuration."""
+class OnlinePolicyConfig(BaseModel):
+    """Online policy configuration (rule-based + MLP bandit)."""
 
-    # Model architecture
-    emb_dim: int = 768
-    proj_dim: int = 128
-    hand_dim: int = 10
-    trunk_dim: int = 128
+    # MLP bandit (existing OnlinePolicy params)
+    feature_dim: int = 10
+    hidden_dim: int = 64
     n_actions: int = 3
-    feature_dim: int = 64
-    dropout: float = 0.1
-
-    # Training hyperparameters
-    batch_size: int = 512
-    lr: float = 3e-4
-    gamma: float = 0.99
-    target_sync: int = 1000
-    max_epochs: int = 20
-    patience: int = 3
-    max_grad_norm: float = 1.0
+    lr: float = 0.01
     epsilon: float = 0.1
 
-    # Class weights for imbalanced actions
-    class_weights: dict[int, float] = Field(
-        default_factory=lambda: {0: 1.0, 1: 0.7, 2: 3.0}
-    )
+    # Rule-based thresholds
+    save_threshold: float = 0.7
+    skip_threshold: float = 0.1
 
-    # Sentence-transformer model
+    # Importance weights
+    personal_weight: float = 0.4
+    preference_weight: float = 0.35
+    tech_weight: float = 0.3
+    emotion_weight: float = 0.2
+    keyword_weight: float = 0.15
+
+    # Retrieval
+    retrieve_top_k: int = 3
+
+    # Sentence-transformer model (GraphMemoryStore)
     st_model: str = "jhgan/ko-sroberta-multitask"
 
 
@@ -138,6 +135,35 @@ class DataPaths(BaseModel):
         self.embeddings.mkdir(parents=True, exist_ok=True)
 
 
+class SecurityConfig(BaseModel):
+    """Security filtering configuration."""
+
+    block_passwords: bool = True
+    block_api_keys: bool = True
+    block_medical_info: bool = True
+    require_source_turn_id: bool = False
+
+
+class ForgettingConfig(BaseModel):
+    """Forgetting / decay configuration."""
+
+    decay_lambda: float = 0.05
+    threshold_compress: float = 0.3
+    threshold_deactivate: float = 0.1
+    deactivation_days: int = 30
+    related_boost: float = 0.1
+
+
+class ComposerConfig(BaseModel):
+    """Context composer configuration."""
+
+    default_token_budget: int = 1024
+    top_k: int = 10
+    level0_avg_tokens: int = 60
+    level1_avg_tokens: int = 25
+    level2_avg_tokens: int = 10
+
+
 class AppConfig(BaseModel):
     """Top-level application configuration."""
 
@@ -145,6 +171,9 @@ class AppConfig(BaseModel):
     selfplay: SelfPlayConfig = Field(default_factory=SelfPlayConfig)
     reward: RewardConfig = Field(default_factory=RewardConfig)
     dataset: DatasetConfig = Field(default_factory=DatasetConfig)
-    extractor: ExtractorConfig = Field(default_factory=ExtractorConfig)
+    online_policy: OnlinePolicyConfig = Field(default_factory=OnlinePolicyConfig)
     paths: DataPaths = Field(default_factory=DataPaths)
+    security: SecurityConfig = Field(default_factory=SecurityConfig)
+    forgetting: ForgettingConfig = Field(default_factory=ForgettingConfig)
+    composer: ComposerConfig = Field(default_factory=ComposerConfig)
     num_episodes: int = 1000
