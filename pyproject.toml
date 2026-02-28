@@ -1,6 +1,6 @@
 [project]
 name = "mcp-memory-server"
-version = "0.2.0"
+version = "0.2.1"
 description = "Intelligent memory MCP server for AI assistants — auto-save, semantic search, RL-powered retrieval, and knowledge graphs"
 requires-python = ">=3.11,<3.14"
 license = "MIT"

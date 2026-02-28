@@ -55,7 +55,13 @@ pip install mcp-memory-server[ko]
 ```
 </details>
 
-### 2. Connect to Claude Desktop
+### 2. Connect to OpenClaw
+
+```bash
+mcporter config add aimemory --command aimemory-mcp --scope home
+```
+
+### 3. Connect to Claude Desktop
 
 Add to your `claude_desktop_config.json`:
 
@@ -89,7 +95,7 @@ That's it. Claude now has persistent memory across all conversations.
 ```
 </details>
 
-### 3. Connect to Claude Code
+### 4. Connect to Claude Code
 
 ```bash
 claude mcp add aimemory -- aimemory-mcp
