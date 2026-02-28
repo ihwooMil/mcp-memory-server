@@ -4,12 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
 from aimemory.memory.forgetting import (
-    AuditEntry,
     ForgettingPipeline,
     ForgettingResult,
     ForgettingThresholds,
@@ -100,7 +98,7 @@ class TestImportanceCalculator:
 
 class TestForgettingPipeline:
     def test_compresses_low_importance(self, store: GraphMemoryStore) -> None:
-        """Memory with importance between threshold_deactivate and threshold_compress should be compressed."""
+        """Memory with importance between threshold_deactivate and threshold_compress should be compressed."""  # noqa: E501
         # Create a memory dated 30 days ago (moderate decay)
         old_time = (datetime.now() - timedelta(days=30)).isoformat()
         mid = store.add_memory(

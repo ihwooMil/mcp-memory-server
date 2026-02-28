@@ -4,12 +4,9 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-import pytest
-
 from aimemory.memory.graph_store import MemoryNode
 from aimemory.online.ab_comparator import ABComparator, ABReport, ABResult
-from aimemory.online.reranker import ReRankPolicy, ReRanker
-
+from aimemory.online.reranker import ReRanker, ReRankPolicy
 
 # ─── 헬퍼 함수 ──────────────────────────────────────────────────────
 
@@ -74,7 +71,11 @@ class TestABComparator:
         candidates = _make_candidates(10)
         result = self.comparator.compare("테스트", candidates, select_k=3)
 
-        expected_baseline = [candidates[0].memory_id, candidates[1].memory_id, candidates[2].memory_id]
+        expected_baseline = [
+            candidates[0].memory_id,
+            candidates[1].memory_id,
+            candidates[2].memory_id,
+        ]
         assert result.baseline_ids == expected_baseline
 
     def test_overlap_count_correct(self):

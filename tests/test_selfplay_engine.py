@@ -8,26 +8,27 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-ollama = pytest.importorskip("ollama", reason="ollama not installed (install with: uv sync --extra train)")
+ollama = pytest.importorskip(
+    "ollama", reason="ollama not installed (install with: uv sync --extra train)"
+)
 
-from aimemory.config import AppConfig, OllamaConfig, SelfPlayConfig
-from aimemory.schemas import (
+from aimemory.config import AppConfig, OllamaConfig, SelfPlayConfig  # noqa: E402
+from aimemory.schemas import (  # noqa: E402
     Episode,
     MemoryActionType,
     Role,
     ScenarioType,
     Turn,
 )
-from aimemory.selfplay.engine import SelfPlayEngine
-from aimemory.selfplay.llm_client import LLMClient
-from aimemory.selfplay.memory_agent import (
+from aimemory.selfplay.engine import SelfPlayEngine  # noqa: E402
+from aimemory.selfplay.llm_client import LLMClient  # noqa: E402
+from aimemory.selfplay.memory_agent import (  # noqa: E402
     MemoryAgent,
     MemoryStore,
     classify_category,
     extract_keywords,
 )
-from aimemory.selfplay.scenarios import ScenarioManager
-
+from aimemory.selfplay.scenarios import ScenarioManager  # noqa: E402
 
 # ─── Fixtures ────────────────────────────────────────────────────────
 
@@ -36,13 +37,15 @@ from aimemory.selfplay.scenarios import ScenarioManager
 def mock_user_client():
     """Mock LLM client that returns deterministic Korean user messages."""
     client = MagicMock(spec=LLMClient)
-    responses = itertools.cycle([
-        "저는 Python을 정말 좋아해요. 데이터 분석에 주로 사용합니다.",
-        "머신러닝 프로젝트를 진행 중인데요, 도움이 필요해요.",
-        "이전에 pandas를 언급했는데, 좀 더 알고 싶어요.",
-        "요즘 Docker를 배우고 있어요. 어렵더라고요.",
-        "취미로 독서를 하는데 특히 SF 소설을 좋아해요.",
-    ])
+    responses = itertools.cycle(
+        [
+            "저는 Python을 정말 좋아해요. 데이터 분석에 주로 사용합니다.",
+            "머신러닝 프로젝트를 진행 중인데요, 도움이 필요해요.",
+            "이전에 pandas를 언급했는데, 좀 더 알고 싶어요.",
+            "요즘 Docker를 배우고 있어요. 어렵더라고요.",
+            "취미로 독서를 하는데 특히 SF 소설을 좋아해요.",
+        ]
+    )
     client.chat.side_effect = lambda *args, **kwargs: next(responses)
     return client
 
@@ -51,13 +54,15 @@ def mock_user_client():
 def mock_assistant_client():
     """Mock LLM client that returns deterministic Korean assistant responses."""
     client = MagicMock(spec=LLMClient)
-    responses = itertools.cycle([
-        "Python은 훌륭한 선택이에요! 데이터 분석에 정말 유용하죠.",
-        "머신러닝 프로젝트를 도와드릴게요. 어떤 부분이 어려우신가요?",
-        "pandas에 대해 더 알고 싶으시군요. 어떤 기능을 배우고 싶으세요?",
-        "Docker는 처음엔 어렵지만 익숙해지면 편리해요.",
-        "SF 소설을 좋아하시는군요! 추천 작품이 있으신가요?",
-    ])
+    responses = itertools.cycle(
+        [
+            "Python은 훌륭한 선택이에요! 데이터 분석에 정말 유용하죠.",
+            "머신러닝 프로젝트를 도와드릴게요. 어떤 부분이 어려우신가요?",
+            "pandas에 대해 더 알고 싶으시군요. 어떤 기능을 배우고 싶으세요?",
+            "Docker는 처음엔 어렵지만 익숙해지면 편리해요.",
+            "SF 소설을 좋아하시는군요! 추천 작품이 있으신가요?",
+        ]
+    )
     client.chat.side_effect = lambda *args, **kwargs: next(responses)
     return client
 
@@ -173,7 +178,7 @@ class TestScenarioManager:
         for scenario in ScenarioType:
             prompt = ScenarioManager.scenario_system_prompt(scenario)
             # Check that the prompt contains Korean characters
-            assert any("\uAC00" <= c <= "\uD7A3" for c in prompt), (
+            assert any("\uac00" <= c <= "\ud7a3" for c in prompt), (
                 f"{scenario} system prompt has no Korean characters"
             )
 
@@ -245,12 +250,15 @@ class TestMemoryAgent:
         store = MemoryStore()
         # Add a memory with multiple overlapping keywords
         from aimemory.schemas import MemoryEntry
-        store.add(MemoryEntry(
-            content="사용자는 Python 개발 경험이 풍부함",
-            source_turn_id=0,
-            keywords=["Python", "개발", "경험"],
-            category="technical",
-        ))
+
+        store.add(
+            MemoryEntry(
+                content="사용자는 Python 개발 경험이 풍부함",
+                source_turn_id=0,
+                keywords=["Python", "개발", "경험"],
+                category="technical",
+            )
+        )
         # Question with 3+ keyword overlap → save suppressed, retrieve triggered
         turn = self._make_turn(2, Role.USER, "Python 개발 경험에 대해 더 알고 싶은데요?")
         decision = agent.decide(turn, store, [turn])
@@ -272,6 +280,7 @@ class TestMemoryAgent:
 class TestMemoryStore:
     def test_add_and_len(self):
         from aimemory.schemas import MemoryEntry
+
         store = MemoryStore()
         assert len(store) == 0
         store.add(MemoryEntry(content="테스트", source_turn_id=0, keywords=["테스트"]))
@@ -279,17 +288,22 @@ class TestMemoryStore:
 
     def test_retrieve_relevant_matches_keywords(self):
         from aimemory.schemas import MemoryEntry
+
         store = MemoryStore()
-        store.add(MemoryEntry(
-            content="Python 개발자",
-            source_turn_id=0,
-            keywords=["Python", "개발자"],
-        ))
-        store.add(MemoryEntry(
-            content="여행 좋아함",
-            source_turn_id=1,
-            keywords=["여행", "취미"],
-        ))
+        store.add(
+            MemoryEntry(
+                content="Python 개발자",
+                source_turn_id=0,
+                keywords=["Python", "개발자"],
+            )
+        )
+        store.add(
+            MemoryEntry(
+                content="여행 좋아함",
+                source_turn_id=1,
+                keywords=["여행", "취미"],
+            )
+        )
         results = store.retrieve_relevant(["Python"])
         assert len(results) == 1
         assert "Python" in results[0].keywords
@@ -301,13 +315,16 @@ class TestMemoryStore:
 
     def test_retrieve_top_k_limit(self):
         from aimemory.schemas import MemoryEntry
+
         store = MemoryStore()
         for i in range(10):
-            store.add(MemoryEntry(
-                content=f"Python 관련 메모 {i}",
-                source_turn_id=i,
-                keywords=["Python"],
-            ))
+            store.add(
+                MemoryEntry(
+                    content=f"Python 관련 메모 {i}",
+                    source_turn_id=i,
+                    keywords=["Python"],
+                )
+            )
         results = store.retrieve_relevant(["Python"], top_k=3)
         assert len(results) <= 3
 
@@ -334,9 +351,7 @@ class TestSelfPlayEngine:
         episode = engine.run_episode(ScenarioType.LEARNING_TUTORING)
         for i, turn in enumerate(episode.turns):
             expected_role = Role.USER if i % 2 == 0 else Role.ASSISTANT
-            assert turn.role == expected_role, (
-                f"Turn {i} expected {expected_role}, got {turn.role}"
-            )
+            assert turn.role == expected_role, f"Turn {i} expected {expected_role}, got {turn.role}"
 
     def test_episode_memory_store_consistent(self, engine):
         episode = engine.run_episode(ScenarioType.TROUBLESHOOTING)
@@ -365,9 +380,7 @@ class TestSelfPlayEngine:
         # When no injection, user_client.chat is called for every user turn except first
         assert episode.num_turns > 0
 
-    def test_memory_injection_with_probability_1(
-        self, mock_user_client, mock_assistant_client
-    ):
+    def test_memory_injection_with_probability_1(self, mock_user_client, mock_assistant_client):
         """With probability=1.0 and stored memories, injection should be triggered."""
         cfg = AppConfig()
         cfg.selfplay = SelfPlayConfig(
@@ -434,12 +447,14 @@ class TestA1MemorySummarySentenceBoundary:
 
     def test_short_content_kept_as_is(self):
         from aimemory.selfplay.memory_agent import _sentence_summary
+
         text = "저는 Python을 좋아해요."
         result = _sentence_summary(text, ["Python"])
         assert "Python" in result
 
     def test_long_content_cut_at_sentence(self):
         from aimemory.selfplay.memory_agent import _sentence_summary
+
         text = "저는 Python을 좋아해요. 데이터 분석에 씁니다. 매일 코딩합니다."
         result = _sentence_summary(text, ["Python"])
         assert len(result) <= 150
@@ -457,7 +472,9 @@ class TestA2AssistantParaphrase:
         agent = MemoryAgent(seed=0)
         store = MemoryStore()
         # Assistant paraphrasing user info with "~하시는군요"
-        turn = self._make_turn(1, Role.ASSISTANT, "Python을 좋아하시는군요! 데이터 분석에 활용하시는군요.")
+        turn = self._make_turn(
+            1, Role.ASSISTANT, "Python을 좋아하시는군요! 데이터 분석에 활용하시는군요."
+        )
         decision = agent.decide(turn, store, [turn])
         assert decision.action == MemoryActionType.SAVE
         assert decision.memory_entry is not None
@@ -479,13 +496,16 @@ class TestA3RetrieveTriggerExpansion:
 
     def _make_store_with_entry(self, keywords: list[str]) -> MemoryStore:
         from aimemory.schemas import MemoryEntry
+
         store = MemoryStore()
-        store.add(MemoryEntry(
-            content="Python과 pandas로 데이터 분석",
-            source_turn_id=0,
-            keywords=keywords,
-            category="technical",
-        ))
+        store.add(
+            MemoryEntry(
+                content="Python과 pandas로 데이터 분석",
+                source_turn_id=0,
+                keywords=keywords,
+                category="technical",
+            )
+        )
         return store
 
     def test_retrieve_on_keyword_overlap(self):
@@ -514,19 +534,42 @@ class TestA5StopwordsFiltered:
         # These are all in _KOREAN_STOPWORDS
         text = "그것은 이것이 저것이 수가 있는 것입니다."
         kws = extract_keywords(text)
-        stopwords = {"것", "수", "때", "거", "게", "줄", "데", "말", "점", "중",
-                     "건", "뭐", "저", "제", "내", "그", "이", "더", "안", "좀",
-                     "걸", "곳"}
+        stopwords = {
+            "것",
+            "수",
+            "때",
+            "거",
+            "게",
+            "줄",
+            "데",
+            "말",
+            "점",
+            "중",
+            "건",
+            "뭐",
+            "저",
+            "제",
+            "내",
+            "그",
+            "이",
+            "더",
+            "안",
+            "좀",
+            "걸",
+            "곳",
+        }
         for kw in kws:
             assert kw not in stopwords, f"Stopword '{kw}' should not be in keywords"
 
 
 class TestA7MetaPatternsExpanded:
     """A7: New meta-text patterns should be detected."""
+
     import re
 
     def test_meta_patterns_expanded(self):
         from aimemory.selfplay.engine import _META_PATTERNS
+
         # Test new patterns
         assert _META_PATTERNS.search("참고로 이것은 테스트입니다")
         assert _META_PATTERNS.search("위 내용을 참고하세요")
@@ -538,6 +581,7 @@ class TestA7MetaPatternsExpanded:
 
     def test_original_patterns_still_work(self):
         from aimemory.selfplay.engine import _META_PATTERNS
+
         assert _META_PATTERNS.search("예시 형식은 다음과 같습니다")
         assert _META_PATTERNS.search("다음 턴에는")
         assert _META_PATTERNS.search("(이런 식으로 대화를 이어가세요)")
@@ -569,6 +613,7 @@ class TestC1ScenarioPromptNoDuplicateKoreanRule:
 
     def test_scenario_prompt_no_duplicate_korean_rule(self):
         from aimemory.selfplay.scenarios import KOREAN_ONLY_RULE
+
         for scenario in ScenarioType:
             prompt = ScenarioManager.scenario_system_prompt(scenario)
             # KOREAN_ONLY_RULE should NOT be duplicated inside the scenario hint
@@ -602,6 +647,7 @@ class TestC3UserPromptHasFewShot:
 
     def test_user_prompt_has_few_shot(self):
         from aimemory.config import SelfPlayConfig
+
         cfg = SelfPlayConfig()
         assert "대화 흐름 예시" in cfg.user_system_prompt, (
             "user_system_prompt should contain '대화 흐름 예시' few-shot section"
@@ -609,6 +655,7 @@ class TestC3UserPromptHasFewShot:
 
     def test_user_prompt_few_shot_contains_example_exchange(self):
         from aimemory.config import SelfPlayConfig
+
         cfg = SelfPlayConfig()
         assert "된장찌개" in cfg.user_system_prompt, (
             "user_system_prompt few-shot example should contain the sample exchange"
@@ -620,17 +667,15 @@ class TestC4ConfigDefaults:
 
     def test_temperature_default(self):
         from aimemory.config import OllamaConfig
+
         cfg = OllamaConfig()
-        assert cfg.temperature == 0.7, (
-            f"Expected default temperature 0.7, got {cfg.temperature}"
-        )
+        assert cfg.temperature == 0.7, f"Expected default temperature 0.7, got {cfg.temperature}"
 
     def test_max_tokens_default(self):
         from aimemory.config import OllamaConfig
+
         cfg = OllamaConfig()
-        assert cfg.max_tokens == 384, (
-            f"Expected default max_tokens 384, got {cfg.max_tokens}"
-        )
+        assert cfg.max_tokens == 384, f"Expected default max_tokens 384, got {cfg.max_tokens}"
 
 
 class TestC5RoundRobinTopics:
@@ -650,9 +695,7 @@ class TestC5RoundRobinTopics:
             counts[t.id] = counts.get(t.id, 0) + 1
         # Each topic should appear at least twice in 3 full rounds
         for topic_id, count in counts.items():
-            assert count >= 2, (
-                f"Topic '{topic_id}' appeared only {count} times in {n * 3} draws"
-            )
+            assert count >= 2, f"Topic '{topic_id}' appeared only {count} times in {n * 3} draws"
 
     def test_round_robin_covers_all_topics(self):
         mgr = ScenarioManager(seed=7)
@@ -661,14 +704,14 @@ class TestC5RoundRobinTopics:
         seen_ids = {t.id for t in topics}
         all_ids = {t.id for t in mgr.all_topics}
         assert seen_ids == all_ids, (
-            f"round_robin_topics({n}) should cover all {n} topics, "
-            f"missing: {all_ids - seen_ids}"
+            f"round_robin_topics({n}) should cover all {n} topics, missing: {all_ids - seen_ids}"
         )
 
     def test_round_robin_empty(self):
+        import tempfile
+
         from aimemory.selfplay.scenarios import ScenarioManager as SM
-        import tempfile, json
-        from pathlib import Path
+
         # Create a manager with no topics
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = SM(seed=0, prompts_dir=Path(tmpdir))

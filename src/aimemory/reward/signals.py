@@ -7,13 +7,11 @@ All signals are normalized to approximately [-1, 1] or [0, 1] unless noted.
 from __future__ import annotations
 
 import re
-from collections import Counter
 
 from aimemory.schemas import Action, MemoryEntry, State, Turn
 
 from .korean_patterns import (
     CLARIFICATION_PATTERNS,
-    COMMON_NOUN_TAGS,
     CONSTRAINT_EXPRESSIONS,
     DISCOURSE_MARKERS,
     ELABORATION_PATTERNS,
@@ -219,9 +217,7 @@ def compute_r3_efficiency(
             words = text.split()
             substantive_words = [w for w in words if len(w) >= 2]
             return min(len(substantive_words) / max(len(words), 1), 1.0)
-        substantive_count = sum(
-            1 for surface, pos in tokens if _is_substantive_token(surface, pos)
-        )
+        substantive_count = sum(1 for surface, pos in tokens if _is_substantive_token(surface, pos))
         return substantive_count / max(len(tokens), 1)
 
     orig_density = _substantive_density(original_content)
@@ -283,7 +279,8 @@ def compute_r4_retrieval_relevance(
         if not memory_keywords:
             continue
         matched = sum(
-            1 for kw in memory_keywords
+            1
+            for kw in memory_keywords
             if _keyword_in_context(kw, context_keywords, current_context)
         )
         overlap = matched / max(len(memory_keywords), 1)
@@ -346,10 +343,7 @@ def compute_r6_self_reference(text: str) -> float:
     if not has_first_person:
         return 0.0
 
-    all_utterance_patterns = (
-        PREFERENCE_UTTERANCE_PATTERNS
-        + EXPERIENCE_UTTERANCE_PATTERNS
-    )
+    all_utterance_patterns = PREFERENCE_UTTERANCE_PATTERNS + EXPERIENCE_UTTERANCE_PATTERNS
     has_utterance = any(pat in text for pat in all_utterance_patterns)
 
     # Count substantive keywords for graduated scoring
@@ -396,9 +390,7 @@ def compute_r7_info_density(text: str) -> float:
         substantive_words = [w for w in words if len(w) >= 2]
         return min(len(substantive_words) / max(len(words), 1), 1.0)
 
-    substantive_count = sum(
-        1 for surface, pos in tokens if _is_substantive_token(surface, pos)
-    )
+    substantive_count = sum(1 for surface, pos in tokens if _is_substantive_token(surface, pos))
     return substantive_count / len(tokens)
 
 

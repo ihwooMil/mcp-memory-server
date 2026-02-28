@@ -6,7 +6,6 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
@@ -66,19 +65,21 @@ class SelfPlayConfig(BaseModel):
 class RewardConfig(BaseModel):
     """Reward calculation configuration."""
 
-    weights: dict[str, float] = Field(default_factory=lambda: {
-        "r1_keyword_reappearance": 1.0,
-        "r2_repeated_question_penalty": 1.0,
-        "r3_efficiency": 0.8,
-        "r4_retrieval_relevance": 1.2,
-        "r5_speech_act_weight": 1.0,
-        "r6_self_reference": 1.0,
-        "r7_info_density": 0.8,
-        "r8_preference_constraint": 1.2,
-        "r9_emotional_salience": 0.6,
-        "r10_topic_boundary": 1.0,
-        "r11_user_feedback": 1.0,
-    })
+    weights: dict[str, float] = Field(
+        default_factory=lambda: {
+            "r1_keyword_reappearance": 1.0,
+            "r2_repeated_question_penalty": 1.0,
+            "r3_efficiency": 0.8,
+            "r4_retrieval_relevance": 1.2,
+            "r5_speech_act_weight": 1.0,
+            "r6_self_reference": 1.0,
+            "r7_info_density": 0.8,
+            "r8_preference_constraint": 1.2,
+            "r9_emotional_salience": 0.6,
+            "r10_topic_boundary": 1.0,
+            "r11_user_feedback": 1.0,
+        }
+    )
     proper_noun_multiplier: float = 3.0
     common_noun_multiplier: float = 0.3
 
@@ -206,12 +207,11 @@ class GossipConfig(BaseModel):
     rule_hash_verify: bool = True
 
 
-
 class ReRankerConfig(BaseModel):
     """RL Re-ranker configuration."""
 
     # Feature extraction
-    feature_dim: int = 11      # 8 → 11 (기존 8 + graph 3)
+    feature_dim: int = 11  # 8 → 11 (기존 8 + graph 3)
     use_graph_features: bool = False  # True면 KG 피처 활성화
 
     # Model
@@ -220,14 +220,14 @@ class ReRankerConfig(BaseModel):
     epsilon: float = 0.15
 
     # Re-ranking
-    candidate_k: int = 10      # ChromaDB에서 가져올 후보 수
-    select_k: int = 3          # 리랭킹 후 선택할 수
+    candidate_k: int = 10  # ChromaDB에서 가져올 후보 수
+    select_k: int = 3  # 리랭킹 후 선택할 수
 
     # Latency budget
     max_latency_ms: float = 20.0  # 최대 허용 리랭킹 지연 시간 (ms)
 
     # Enable/disable
-    enabled: bool = True       # False이면 ChromaDB 순서를 그대로 사용
+    enabled: bool = True  # False이면 ChromaDB 순서를 그대로 사용
 
 
 class MCPServerConfig(BaseModel):

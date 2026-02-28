@@ -105,7 +105,7 @@ class LLMClient:
 
             except Exception as e:
                 last_error = e
-                wait = 2 ** attempt
+                wait = 2**attempt
                 logger.warning(
                     "LLM call failed (attempt %d/%d): %s. Retrying in %ds...",
                     attempt + 1,

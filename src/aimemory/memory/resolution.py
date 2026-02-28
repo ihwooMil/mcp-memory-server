@@ -122,7 +122,9 @@ def generate_level2(text: str, keywords: list[str] | None = None, lang: str = "k
 
 
 def generate_all_levels(
-    text: str, keywords: list[str] | None = None, lang: str = "ko",
+    text: str,
+    keywords: list[str] | None = None,
+    lang: str = "ko",
 ) -> MultiResolutionText:
     """Generate all resolution levels for a text."""
     return MultiResolutionText(

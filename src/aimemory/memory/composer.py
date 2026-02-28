@@ -49,7 +49,10 @@ class ContextComposer:
     """
 
     def __init__(
-        self, token_budget: int = 1024, top_k: int = 10, mmr_lambda: float = 0.7,
+        self,
+        token_budget: int = 1024,
+        top_k: int = 10,
+        mmr_lambda: float = 0.7,
     ) -> None:
         self.token_budget = token_budget
         self.top_k = top_k
@@ -77,9 +80,7 @@ class ContextComposer:
 
                 # Max similarity to already-selected memories
                 if selected_nodes:
-                    max_sim = max(
-                        _keyword_similarity(node, sel) for sel in selected_nodes
-                    )
+                    max_sim = max(_keyword_similarity(node, sel) for sel in selected_nodes)
                 else:
                     max_sim = 0.0
 

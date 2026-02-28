@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-
 import pytest
 
 from aimemory.schemas import (
@@ -14,7 +12,6 @@ from aimemory.schemas import (
     MemoryEntry,
     RewardBreakdown,
     Role,
-    SARTriple,
     ScenarioType,
     State,
     Turn,
@@ -24,10 +21,27 @@ from aimemory.schemas import (
 @pytest.fixture
 def sample_turns() -> list[Turn]:
     return [
-        Turn(turn_id=0, role=Role.USER, content="안녕하세요! 저는 Python을 좋아해요.", token_count=15),
-        Turn(turn_id=1, role=Role.ASSISTANT, content="안녕하세요! Python을 좋아하시는군요. 어떤 분야에서 사용하시나요?", token_count=20),
-        Turn(turn_id=2, role=Role.USER, content="주로 데이터 분석이랑 머신러닝에 사용해요. 특히 pandas를 많이 써요.", token_count=22),
-        Turn(turn_id=3, role=Role.ASSISTANT, content="pandas는 정말 유용한 라이브러리죠! 어떤 데이터를 다루시나요?", token_count=18),
+        Turn(
+            turn_id=0, role=Role.USER, content="안녕하세요! 저는 Python을 좋아해요.", token_count=15
+        ),
+        Turn(
+            turn_id=1,
+            role=Role.ASSISTANT,
+            content="안녕하세요! Python을 좋아하시는군요. 어떤 분야에서 사용하시나요?",
+            token_count=20,
+        ),
+        Turn(
+            turn_id=2,
+            role=Role.USER,
+            content="주로 데이터 분석이랑 머신러닝에 사용해요. 특히 pandas를 많이 써요.",
+            token_count=22,
+        ),
+        Turn(
+            turn_id=3,
+            role=Role.ASSISTANT,
+            content="pandas는 정말 유용한 라이브러리죠! 어떤 데이터를 다루시나요?",
+            token_count=18,
+        ),
     ]
 
 

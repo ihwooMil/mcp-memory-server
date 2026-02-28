@@ -9,7 +9,6 @@ import logging
 import math
 import re
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -50,9 +49,7 @@ _PERSONAL_PATTERN = re.compile(
 )
 
 # 선호도 키워드 패턴
-_PREFERENCE_PATTERN = re.compile(
-    r"좋아|싫어|선호|취미|즐겨|주로|자주|항상|절대"
-)
+_PREFERENCE_PATTERN = re.compile(r"좋아|싫어|선호|취미|즐겨|주로|자주|항상|절대")
 
 
 class ReRankFeatureExtractor:
@@ -74,19 +71,31 @@ class ReRankFeatureExtractor:
         10: has_negative_relation - 1.0 if a negative predicate exists for this memory's entities
     """
 
-    _NEGATIVE_PREDICATES = frozenset({
-        "싫어함", "부정", "반대", "혐오", "거부", "기피", "부담",
-        "dislikes", "hates", "opposes", "avoids", "refuses",
-    })
+    _NEGATIVE_PREDICATES = frozenset(
+        {
+            "싫어함",
+            "부정",
+            "반대",
+            "혐오",
+            "거부",
+            "기피",
+            "부담",
+            "dislikes",
+            "hates",
+            "opposes",
+            "avoids",
+            "refuses",
+        }
+    )
 
     # 카테고리별 시간 감쇠 계수 — 항구적 정보는 느리게, 일시적 정보는 빠르게
     _CATEGORY_DECAY: dict[str, float] = {
-        "core_principle": 0.001,   # 반감기 ~693일: 거의 감쇠 없음
-        "fact": 0.005,             # 반감기 ~139일
-        "preference": 0.005,       # 반감기 ~139일
-        "technical": 0.01,         # 반감기 ~69일
-        "emotion": 0.03,           # 반감기 ~23일
-        "experience": 0.02,        # 반감기 ~35일
+        "core_principle": 0.001,  # 반감기 ~693일: 거의 감쇠 없음
+        "fact": 0.005,  # 반감기 ~139일
+        "preference": 0.005,  # 반감기 ~139일
+        "technical": 0.01,  # 반감기 ~69일
+        "emotion": 0.03,  # 반감기 ~23일
+        "experience": 0.02,  # 반감기 ~35일
     }
 
     def __init__(self, decay_lambda: float = 0.01, kg: KnowledgeGraph | None = None) -> None:
@@ -169,18 +178,18 @@ class ReRankFeatureExtractor:
         feat[6] = 1.0 if candidate.related_ids else 0.0
 
         # 7: resolution_available - 사용 가능한 해상도 레벨 수 (0~3 → 0~1 정규화)
-        resolution_count = sum([
-            bool(candidate.content),
-            bool(candidate.level1_text),
-            bool(candidate.level2_text),
-        ])
+        resolution_count = sum(
+            [
+                bool(candidate.content),
+                bool(candidate.level1_text),
+                bool(candidate.level2_text),
+            ]
+        )
         feat[7] = resolution_count / 3.0
 
         # 8-10: KG 기반 그래프 피처 (KG가 있을 때만)
         if self._kg is not None:
-            feat[8], feat[9], feat[10] = self._extract_graph_features(
-                query_keywords, candidate
-            )
+            feat[8], feat[9], feat[10] = self._extract_graph_features(query_keywords, candidate)
 
         return feat
 
@@ -258,6 +267,7 @@ class ReRankFeatureExtractor:
 
         try:
             from datetime import datetime, timezone
+
             created_dt = datetime.fromisoformat(created_at)
             if created_dt.tzinfo is None:
                 created_dt = created_dt.replace(tzinfo=timezone.utc)
@@ -416,7 +426,7 @@ class ReRankPolicy:
         offset = 0
         for p in self._model.parameters():
             numel = p.data.numel()
-            chunk = params[offset: offset + numel]
+            chunk = params[offset : offset + numel]
             p.data.copy_(torch.from_numpy(chunk.reshape(p.data.shape)).float())
             offset += numel
 

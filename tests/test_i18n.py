@@ -6,8 +6,7 @@ import re
 
 import pytest
 
-from aimemory.i18n import get_patterns, available_languages
-
+from aimemory.i18n import available_languages, get_patterns
 
 # ─── Registry ───
 
@@ -40,15 +39,18 @@ class TestEnglishFeedback:
     def lp(self):
         return get_patterns("en")
 
-    @pytest.mark.parametrize("text", [
-        "That's right",
-        "Yes, that's correct",
-        "Exactly!",
-        "You remembered!",
-        "Perfect",
-        "Spot on",
-        "You're right",
-    ])
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "That's right",
+            "Yes, that's correct",
+            "Exactly!",
+            "You remembered!",
+            "Perfect",
+            "Spot on",
+            "You're right",
+        ],
+    )
     def test_positive_feedback_match(self, lp, text):
         matched = False
         for pattern_str, conf, name in lp.positive_feedback:
@@ -57,17 +59,20 @@ class TestEnglishFeedback:
                 break
         assert matched, f"No positive pattern matched: {text!r}"
 
-    @pytest.mark.parametrize("text", [
-        "No, that's wrong",
-        "I never said that",
-        "That's incorrect",
-        "You're wrong",
-        "I already told you",
-        "You already asked me that",
-        "You misunderstood",
-        "When did I say that?",
-        "That's not what I said",
-    ])
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "No, that's wrong",
+            "I never said that",
+            "That's incorrect",
+            "You're wrong",
+            "I already told you",
+            "You already asked me that",
+            "You misunderstood",
+            "When did I say that?",
+            "That's not what I said",
+        ],
+    )
     def test_negative_feedback_match(self, lp, text):
         matched = False
         for pattern_str, conf, name in lp.negative_feedback:
@@ -76,13 +81,16 @@ class TestEnglishFeedback:
                 break
         assert matched, f"No negative pattern matched: {text!r}"
 
-    @pytest.mark.parametrize("text", [
-        "That's helpful",
-        "Thanks for remembering",
-        "Good to know",
-        "That helps",
-        "Oh right, I forgot about that",
-    ])
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "That's helpful",
+            "Thanks for remembering",
+            "Good to know",
+            "That helps",
+            "Oh right, I forgot about that",
+        ],
+    )
     def test_useful_feedback_match(self, lp, text):
         matched = False
         for pattern_str, conf, name in lp.useful_feedback:
@@ -133,10 +141,22 @@ class TestEnglishEntityExtraction:
 
 
 class TestEnglishDismissive:
-    @pytest.mark.parametrize("text", [
-        "ok", "okay", "sure", "fine", "yeah", "yep",
-        "mhm", "uh-huh", "alright", "got it", "I see",
-    ])
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "ok",
+            "okay",
+            "sure",
+            "fine",
+            "yeah",
+            "yep",
+            "mhm",
+            "uh-huh",
+            "alright",
+            "got it",
+            "I see",
+        ],
+    )
     def test_dismissive_match(self, text):
         lp = get_patterns("en")
         pat = re.compile(lp.dismissive_pattern)
@@ -297,10 +317,12 @@ class TestImplicitDetectorI18n:
 class TestResolutionI18n:
     def test_estimate_tokens_ko(self):
         from aimemory.memory.resolution import estimate_tokens
+
         tokens = estimate_tokens("한국어 텍스트입니다", lang="ko")
         assert tokens == max(1, int(len("한국어 텍스트입니다") / 2.5))
 
     def test_estimate_tokens_en(self):
         from aimemory.memory.resolution import estimate_tokens
+
         tokens = estimate_tokens("This is English text", lang="en")
         assert tokens == max(1, int(len("This is English text") / 4.0))

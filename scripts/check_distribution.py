@@ -1,11 +1,12 @@
 """Generate episodes and check action distribution."""
+
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
 from aimemory.config import AppConfig
-from aimemory.selfplay.engine import SelfPlayEngine
 from aimemory.schemas import MemoryActionType
-from collections import Counter
+from aimemory.selfplay.engine import SelfPlayEngine
 
 config = AppConfig()
 engine = SelfPlayEngine(config=config, seed=42)
@@ -30,7 +31,9 @@ for i in range(10):
     ep_path = output_dir / f"episode_{i:04d}.json"
     ep_path.write_text(ep.model_dump_json(indent=2), encoding="utf-8")
 
-    print(f"Ep {i:2d}: {ep.num_turns:2d} turns | SAVE={saves:2d} RETRIEVE={retrieves:2d} SKIP={skips:2d} | {ep.scenario}")
+    print(
+        f"Ep {i:2d}: {ep.num_turns:2d} turns | SAVE={saves:2d} RETRIEVE={retrieves:2d} SKIP={skips:2d} | {ep.scenario}"  # noqa: E501
+    )
 
     for d in ep.memory_decisions:
         all_actions[d.action] += 1

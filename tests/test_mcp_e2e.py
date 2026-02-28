@@ -11,10 +11,7 @@ works correctly across multiple conversation turns.
 
 from __future__ import annotations
 
-import pytest
-
 from aimemory.mcp.bridge import MemoryBridge
-
 
 # 10 conversation scenarios: save content + query to retrieve it later
 CONVERSATIONS = [
@@ -134,7 +131,7 @@ def test_e2e_10_conversations(tmp_path):
     if total_recall_checks > 0:
         auto_recall_rate = recall_hits / total_recall_checks
         assert auto_recall_rate >= 0.5, (
-            f"Auto-search recall too low: {recall_hits}/{total_recall_checks} = {auto_recall_rate:.0%}"
+            f"Auto-search recall too low: {recall_hits}/{total_recall_checks} = {auto_recall_rate:.0%}"  # noqa: E501
         )
 
 

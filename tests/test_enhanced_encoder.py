@@ -1,8 +1,8 @@
 """Tests for EnhancedStateEncoder."""
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from aimemory.online.enhanced_encoder import EnhancedStateEncoder
 from aimemory.online.policy import StateEncoder

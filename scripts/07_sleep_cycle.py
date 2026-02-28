@@ -38,9 +38,7 @@ logger = logging.getLogger("07_sleep_cycle")
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Run sleep cycle (periodic memory maintenance)"
-    )
+    parser = argparse.ArgumentParser(description="Run sleep cycle (periodic memory maintenance)")
     parser.add_argument("--db-path", type=str, default="./memory_db")
     parser.add_argument("--checkpoint-path", type=str, default=None)
     parser.add_argument(

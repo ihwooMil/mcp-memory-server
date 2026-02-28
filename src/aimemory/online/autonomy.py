@@ -44,7 +44,9 @@ class ProgressiveAutonomy:
         if self._confidence < self._confidence_threshold:
             return self._initial_save
         # Linear interpolation: initial_save → min_save as confidence grows beyond threshold
-        progress = min((self._confidence - self._confidence_threshold) / self._confidence_threshold, 1.0)
+        progress = min(
+            (self._confidence - self._confidence_threshold) / self._confidence_threshold, 1.0
+        )
         return self._initial_save - progress * (self._initial_save - self._min_save)
 
     @property
@@ -52,7 +54,9 @@ class ProgressiveAutonomy:
         """Current SKIP threshold. Increases as confidence grows."""
         if self._confidence < self._confidence_threshold:
             return self._initial_skip
-        progress = min((self._confidence - self._confidence_threshold) / self._confidence_threshold, 1.0)
+        progress = min(
+            (self._confidence - self._confidence_threshold) / self._confidence_threshold, 1.0
+        )
         return self._initial_skip + progress * (self._max_skip - self._initial_skip)
 
     @property

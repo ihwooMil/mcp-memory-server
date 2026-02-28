@@ -19,8 +19,6 @@ from aimemory.schemas import (
 
 from .signals import (
     compute_r1_keyword_reappearance,
-    compute_r10_topic_boundary,
-    compute_r11_user_feedback,
     compute_r2_repeated_question_penalty,
     compute_r3_efficiency,
     compute_r4_retrieval_relevance,
@@ -29,6 +27,8 @@ from .signals import (
     compute_r7_info_density,
     compute_r8_preference_constraint,
     compute_r9_emotional_salience,
+    compute_r10_topic_boundary,
+    compute_r11_user_feedback,
 )
 
 
@@ -111,6 +111,7 @@ class RewardCalculator:
         r4 = 0.0
         if action.action_type == MemoryActionType.RETRIEVE:
             from aimemory.reward.signals import _extract_keywords_from_text
+
             proxy_memories = [
                 MemoryEntry(
                     content=summary,
@@ -179,12 +180,8 @@ class RewardCalculator:
         """
         action = Action(
             action_type=decision.action,
-            saved_content=(
-                decision.memory_entry.content if decision.memory_entry else None
-            ),
-            saved_keywords=(
-                decision.memory_entry.keywords if decision.memory_entry else []
-            ),
+            saved_content=(decision.memory_entry.content if decision.memory_entry else None),
+            saved_keywords=(decision.memory_entry.keywords if decision.memory_entry else []),
             retrieved_count=len(decision.retrieved_memories),
         )
         return self.compute(

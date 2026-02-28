@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import tempfile
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -13,11 +13,10 @@ import pytest
 from aimemory.memory.graph_store import MemoryNode
 from aimemory.online.reranker import (
     RERANK_FEATURE_DIM,
+    ReRanker,
     ReRankFeatureExtractor,
     ReRankPolicy,
-    ReRanker,
 )
-
 
 # ─── 헬퍼 함수 ──────────────────────────────────────────────────────
 
@@ -111,9 +110,7 @@ class TestReRankFeatureExtractor:
 
     def test_recency_decay_recent(self):
         """최근 생성 메모리 → 높은 recency 점수."""
-        recent_node = _make_node(
-            created_at=datetime.now(timezone.utc).isoformat()
-        )
+        recent_node = _make_node(created_at=datetime.now(timezone.utc).isoformat())
         features = self.extractor.extract("테스트", [recent_node])
         # 방금 생성 → exp(-0.05 * 0) ≈ 1.0
         assert features[0, 3] > 0.9
@@ -285,6 +282,7 @@ class TestReRanker:
     def test_rerank_latency_under_budget(self):
         """wall-clock 지연 시간이 max_latency_ms 이내여야 합니다."""
         import time
+
         candidates = _make_candidates(10)
         start = time.perf_counter()
         self.reranker.rerank("Python 개발", candidates)
@@ -347,7 +345,6 @@ class TestReRankerIntegration:
 
     def _make_agent_with_reranker(self, reranker=None):
         from aimemory.online.policy import MemoryPolicyAgent, OnlinePolicy
-        from aimemory.schemas import Role, Turn
 
         mock_store = MagicMock()
         mock_store.get_stats.return_value = {"total": 5}
@@ -379,17 +376,16 @@ class TestReRankerIntegration:
         agent, mock_store, _ = self._make_agent_with_reranker()
 
         # 질문 형태의 쿼리 → RETRIEVE 경로
-        turn = Turn(
-            turn_id=1, role=Role.USER,
-            content="Python에 대해 알려주세요?"
-        )
+        turn = Turn(turn_id=1, role=Role.USER, content="Python에 대해 알려주세요?")
         decision = agent.decide(turn, [])
 
         if decision.action.name == "RETRIEVE":
             # top_k=10으로 검색해야 함 (리랭커 사용 시)
             call_args = mock_store.search.call_args
             if call_args:
-                assert call_args[1].get("top_k", call_args[0][1] if len(call_args[0]) > 1 else 3) == 10
+                assert (
+                    call_args[1].get("top_k", call_args[0][1] if len(call_args[0]) > 1 else 3) == 10
+                )
 
     def test_feedback_updates_reranker(self):
         """RETRIEVE 후 process_feedback()이 reranker를 업데이트해야 합니다."""
@@ -410,6 +406,7 @@ class TestReRankerIntegration:
         # RETRIEVE 액션으로 설정
         from aimemory.online.policy import ACTION_INDEX
         from aimemory.schemas import MemoryActionType
+
         agent._last_action_id = ACTION_INDEX[MemoryActionType.RETRIEVE]
         agent._recent_actions.append(MemoryActionType.RETRIEVE)
 
@@ -443,6 +440,7 @@ class TestGraphFeatures:
     def test_feature_dim_with_kg(self):
         """With KG, feature dim is 11."""
         from aimemory.memory.knowledge_graph import KnowledgeGraph
+
         kg = KnowledgeGraph()
         ext = ReRankFeatureExtractor(kg=kg)
         assert ext.feature_dim == 11
@@ -450,6 +448,7 @@ class TestGraphFeatures:
     def test_graph_features_shape(self):
         """With KG, extract produces (n, 11) array."""
         from aimemory.memory.knowledge_graph import KnowledgeGraph
+
         kg = KnowledgeGraph()
         kg.add_triple("사용자", "좋아함", "Python", "mem_001")
         ext = ReRankFeatureExtractor(kg=kg)
@@ -460,6 +459,7 @@ class TestGraphFeatures:
     def test_reranker_with_kg(self):
         """ReRanker initializes correctly with KG."""
         from aimemory.memory.knowledge_graph import KnowledgeGraph
+
         kg = KnowledgeGraph()
         reranker = ReRanker(kg=kg, enabled=True)
         candidates = _make_candidates(10)

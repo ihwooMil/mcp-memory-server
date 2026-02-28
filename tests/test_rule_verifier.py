@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from aimemory.config import SecurityConfig
 from aimemory.online.rule_verifier import RuleVerifier
 

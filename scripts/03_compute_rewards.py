@@ -55,12 +55,11 @@ def load_reward_calculator(reward_config: RewardConfig):
     """Load the real reward calculator if available, otherwise use mock."""
     try:
         from aimemory.reward.calculator import RewardCalculator  # type: ignore[import]
+
         logger.info("Using real RewardCalculator from aimemory.reward.calculator")
         return RewardCalculator(reward_config)
     except ImportError:
-        logger.warning(
-            "aimemory.reward.calculator not available; using mock reward calculator"
-        )
+        logger.warning("aimemory.reward.calculator not available; using mock reward calculator")
         return MockRewardCalculator(reward_config)
 
 
@@ -74,9 +73,7 @@ class MockRewardCalculator:
     def __init__(self, config: RewardConfig) -> None:
         self.config = config
 
-    def compute_episode_rewards(
-        self, episode: Episode
-    ) -> dict[int, RewardBreakdown]:
+    def compute_episode_rewards(self, episode: Episode) -> dict[int, RewardBreakdown]:
         """Compute a RewardBreakdown for each decision turn in the episode.
 
         Returns:
@@ -93,22 +90,17 @@ class MockRewardCalculator:
 
             # R1: keyword reappearance
             if saved_keywords:
-                reappearance_count = sum(
-                    1 for kw in saved_keywords
-                    if kw.lower() in all_turn_text
-                )
+                reappearance_count = sum(1 for kw in saved_keywords if kw.lower() in all_turn_text)
                 rb.r1_keyword_reappearance = min(1.0, reappearance_count * 0.1)
 
             # R3: efficiency (shorter saved content = better)
-            if (
-                decision.memory_entry is not None
-                and decision.memory_entry.content
-            ):
+            if decision.memory_entry is not None and decision.memory_entry.content:
                 content_len = len(decision.memory_entry.content.split())
                 rb.r3_efficiency = max(0.0, 1.0 - content_len / 50.0)
 
             # R4: retrieval relevance (mock: reward retrieval actions)
             from aimemory.schemas import MemoryActionType
+
             if decision.action == MemoryActionType.RETRIEVE:
                 rb.r4_retrieval_relevance = 0.5 * len(decision.retrieved_memories)
 
@@ -165,9 +157,7 @@ def compute_rewards_for_file(
                 processed += 1
 
             except Exception as exc:
-                logger.error(
-                    "Error on line %d of %s: %s", line_num, input_path, exc
-                )
+                logger.error("Error on line %d of %s: %s", line_num, input_path, exc)
                 errors += 1
 
     return processed, errors
@@ -205,16 +195,12 @@ def main() -> None:
     for jsonl_file in jsonl_files:
         if args.in_place:
             # Write to a temp file first, then replace the original
-            tmp_fd, tmp_path_str = tempfile.mkstemp(
-                suffix=".jsonl", dir=str(jsonl_file.parent)
-            )
+            tmp_fd, tmp_path_str = tempfile.mkstemp(suffix=".jsonl", dir=str(jsonl_file.parent))
             os.close(tmp_fd)
             tmp_path = Path(tmp_path_str)
             out_path = tmp_path
         else:
-            out_path = output_dir / jsonl_file.name.replace(
-                ".jsonl", "_rewarded.jsonl"
-            )
+            out_path = output_dir / jsonl_file.name.replace(".jsonl", "_rewarded.jsonl")
             tmp_path = None
 
         logger.info("Processing %s → %s", jsonl_file.name, out_path.name)
@@ -229,12 +215,15 @@ def main() -> None:
 
         logger.info(
             "  %s: %d episodes processed, %d errors",
-            jsonl_file.name, n_processed, n_errors,
+            jsonl_file.name,
+            n_processed,
+            n_errors,
         )
 
     logger.info(
         "Done: %d total episodes processed, %d errors",
-        total_processed, total_errors,
+        total_processed,
+        total_errors,
     )
 
 

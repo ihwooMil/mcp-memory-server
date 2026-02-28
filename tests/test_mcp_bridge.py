@@ -10,7 +10,6 @@ import pytest
 
 from aimemory.mcp.bridge import MemoryBridge
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────
 
 
@@ -353,6 +352,7 @@ def graphrag_bridge(tmp_path):
 def test_enhanced_bridge_initialization(enhanced_bridge):
     """Enhanced bridge creates EnhancedOnlinePolicy."""
     from aimemory.online.enhanced_policy import EnhancedOnlinePolicy
+
     assert isinstance(enhanced_bridge._policy, EnhancedOnlinePolicy)
 
 
@@ -370,9 +370,7 @@ def test_graphrag_bridge_initialization(graphrag_bridge):
 
 def test_graphrag_bridge_auto_search(graphrag_bridge):
     """GraphRAG bridge auto_search uses hybrid retrieval."""
-    graphrag_bridge.save_memory(
-        "봉골레를 싫어해요", keywords=["봉골레"], category="preference"
-    )
+    graphrag_bridge.save_memory("봉골레를 싫어해요", keywords=["봉골레"], category="preference")
     result = graphrag_bridge.auto_search("봉골레 파스타")
     assert "context" in result
     assert "memories_used" in result
@@ -397,6 +395,7 @@ def test_both_modes_combined(tmp_path):
         use_graph_rag=True,
     )
     from aimemory.online.enhanced_policy import EnhancedOnlinePolicy
+
     assert isinstance(b._policy, EnhancedOnlinePolicy)
     assert b._kg is not None
     assert b._retriever is not None

@@ -28,7 +28,6 @@ import re
 import sys
 import time
 from collections import Counter
-from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
@@ -36,7 +35,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from aimemory.config import DataPaths
 from aimemory.schemas import (
     Episode,
-    MemoryActionType,
     Role,
     ScenarioType,
     Turn,
@@ -418,9 +416,7 @@ def main() -> None:
     if multi_session_path.exists():
         logger.info("Converting multi_session_dialogue ...")
         ms_out = output_dir / "episodes_public_multi_session.jsonl"
-        ms_result = process_multi_session(
-            multi_session_path, ms_out, agent, max_eps, args.dry_run
-        )
+        ms_result = process_multi_session(multi_session_path, ms_out, agent, max_eps, args.dry_run)
         print_summary("multi_session_dialogue", ms_result)
     else:
         logger.warning("Not found: %s", multi_session_path)
@@ -430,9 +426,7 @@ def main() -> None:
     if role_playing_dir.exists():
         logger.info("Converting korean_role_playing ...")
         rp_out = output_dir / "episodes_public_role_playing.jsonl"
-        rp_result = process_role_playing(
-            role_playing_dir, rp_out, agent, max_eps, args.dry_run
-        )
+        rp_result = process_role_playing(role_playing_dir, rp_out, agent, max_eps, args.dry_run)
         print_summary("korean_role_playing", rp_result)
     else:
         logger.warning("Not found: %s", role_playing_dir)

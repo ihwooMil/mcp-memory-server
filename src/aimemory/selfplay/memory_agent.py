@@ -27,9 +27,28 @@ logger = logging.getLogger(__name__)
 
 # Korean stopwords — common meaningless words to filter out
 _KOREAN_STOPWORDS: set[str] = {
-    "것", "수", "때", "거", "게", "줄", "데", "말", "점", "중",
-    "건", "뭐", "저", "제", "내", "그", "이", "더", "안", "좀",
-    "걸", "곳",
+    "것",
+    "수",
+    "때",
+    "거",
+    "게",
+    "줄",
+    "데",
+    "말",
+    "점",
+    "중",
+    "건",
+    "뭐",
+    "저",
+    "제",
+    "내",
+    "그",
+    "이",
+    "더",
+    "안",
+    "좀",
+    "걸",
+    "곳",
 }
 
 # Korean proper nouns / technical terms heuristics
@@ -67,9 +86,7 @@ _PERSONAL_INFO_PATTERNS = [
 ]
 
 _QUESTION_PATTERN = re.compile(r"[?？]|(?:인가요|나요|을까요|ㄹ까요|어요\?|습니까)")
-_PARAPHRASE_PATTERN = re.compile(
-    r"하시는군요|이시군요|이시네요|하셨군요|좋아하시|관심이\s*있으시"
-)
+_PARAPHRASE_PATTERN = re.compile(r"하시는군요|이시군요|이시네요|하셨군요|좋아하시|관심이\s*있으시")
 _EMOTION_KEYWORDS = re.compile(
     r"기쁘|슬프|화나|무서|불안|설레|걱정|힘들|어렵|좋아|싫어|즐거|행복|우울|피곤|신나"
 )
@@ -95,6 +112,7 @@ def extract_keywords(text: str) -> list[str]:
     try:
         import MeCab
         import mecab_ko_dic
+
         tagger = MeCab.Tagger(f"-d {mecab_ko_dic.DICDIR}")
         result = tagger.parse(text)
         for line in result.splitlines():
@@ -128,6 +146,7 @@ def _extract_korean_nouns(text: str) -> list[str]:
     try:
         import MeCab
         import mecab_ko_dic
+
         tagger = MeCab.Tagger(f"-d {mecab_ko_dic.DICDIR}")
         result = tagger.parse(text)
         nouns = []
@@ -166,10 +185,7 @@ def _sentence_summary(text: str, keywords: list[str]) -> str:
     keyword_set = {kw.lower() for kw in keywords}
 
     # Find sentences containing at least one keyword
-    keyword_sentences = [
-        s for s in sentences
-        if any(kw in s.lower() for kw in keyword_set)
-    ]
+    keyword_sentences = [s for s in sentences if any(kw in s.lower() for kw in keyword_set)]
 
     if not keyword_sentences:
         # No keyword sentences — use first sentence
@@ -341,7 +357,12 @@ class MemoryAgent:
                     has_keyword_overlap = True
                     break
 
-        if not should_save and (is_question or has_keyword_overlap or has_discourse_marker) and keywords and len(memory_store) > 0:
+        if (
+            not should_save
+            and (is_question or has_keyword_overlap or has_discourse_marker)
+            and keywords
+            and len(memory_store) > 0
+        ):
             retrieved = memory_store.retrieve_relevant(keywords)
             if retrieved:
                 return MemoryDecision(

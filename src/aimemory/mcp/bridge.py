@@ -69,31 +69,22 @@ class MemoryBridge:
 
         # Environment variable overrides
         self._persist_directory = (
-            persist_directory
-            or os.environ.get("AIMEMORY_DB_PATH")
-            or cfg.persist_directory
+            persist_directory or os.environ.get("AIMEMORY_DB_PATH") or cfg.persist_directory
         )
         self._collection_name = (
-            collection_name
-            or os.environ.get("AIMEMORY_COLLECTION")
-            or cfg.collection_name
+            collection_name or os.environ.get("AIMEMORY_COLLECTION") or cfg.collection_name
         )
         self._embedding_model = (
-            embedding_model
-            or os.environ.get("AIMEMORY_EMBEDDING_MODEL")
-            or cfg.embedding_model
+            embedding_model or os.environ.get("AIMEMORY_EMBEDDING_MODEL") or cfg.embedding_model
         )
-        self._token_budget = (
-            token_budget
-            or int(os.environ.get("AIMEMORY_TOKEN_BUDGET", cfg.token_budget))
+        self._token_budget = token_budget or int(
+            os.environ.get("AIMEMORY_TOKEN_BUDGET", cfg.token_budget)
         )
         self._top_k = top_k or cfg.top_k
         self._reranker_pool_size = int(
             os.environ.get("AIMEMORY_RERANKER_POOL", cfg.reranker_pool_size)
         )
-        self._min_relevance = float(
-            os.environ.get("AIMEMORY_MIN_RELEVANCE", cfg.min_relevance)
-        )
+        self._min_relevance = float(os.environ.get("AIMEMORY_MIN_RELEVANCE", cfg.min_relevance))
         self._policy_checkpoint = (
             policy_checkpoint
             or os.environ.get("AIMEMORY_POLICY_CHECKPOINT")
@@ -124,6 +115,7 @@ class MemoryBridge:
         self._kg = None
         if self._use_graph_rag:
             from aimemory.memory.knowledge_graph import KnowledgeGraph
+
             self._kg = KnowledgeGraph()
 
         # Initialize core components
@@ -136,10 +128,10 @@ class MemoryBridge:
 
         # Policy: enhanced or standard
         if self._use_enhanced:
-            from aimemory.online.enhanced_policy import EnhancedOnlinePolicy
-            from aimemory.online.enhanced_encoder import EnhancedStateEncoder
-            from aimemory.online.replay_buffer import ReplayBuffer
             from aimemory.online.autonomy import ProgressiveAutonomy
+            from aimemory.online.enhanced_encoder import EnhancedStateEncoder
+            from aimemory.online.enhanced_policy import EnhancedOnlinePolicy
+            from aimemory.online.replay_buffer import ReplayBuffer
 
             encoder = EnhancedStateEncoder()
             encoder.set_embedding_fn(self._store._embedding_fn)
@@ -169,6 +161,7 @@ class MemoryBridge:
         self._retriever = None
         if self._kg is not None:
             from aimemory.memory.graph_retriever import GraphRetriever
+
             self._retriever = GraphRetriever(self._store, self._kg)
 
         self._agent = MemoryPolicyAgent(
@@ -280,7 +273,10 @@ class MemoryBridge:
         )
         if self._retriever is not None:
             results = self._retriever.retrieve(
-                user_message, top_k=pool_size, final_k=pool_size, track_access=False,
+                user_message,
+                top_k=pool_size,
+                final_k=pool_size,
+                track_access=False,
             )
         else:
             results = self._store.search(user_message, top_k=pool_size, track_access=False)
@@ -298,6 +294,7 @@ class MemoryBridge:
             features = self._reranker._extractor.extract(user_message, results)
             if len(features) > 0:
                 import torch
+
                 with torch.no_grad():
                     x = torch.from_numpy(features).float()
                     scores = self._reranker._policy._model(x).squeeze(-1).numpy()
@@ -317,7 +314,7 @@ class MemoryBridge:
                     count = self._recent_retrievals[mid]
                     # 최근 검색 횟수에 따라 감점 (1회: -5%, 2회: -10%, ...)
                     penalty = min(count * 0.05, 0.25)  # 최대 25% 감점
-                    node.similarity_score *= (1.0 - penalty)
+                    node.similarity_score *= 1.0 - penalty
 
         # Phase 4: 노이즈 — 검색 결과에 약간의 변동성 부여
         for node in results:
@@ -327,7 +324,8 @@ class MemoryBridge:
 
         # Phase 5: 안전장치 — relevance 최소 기준 적용
         results = [
-            r for r in results
+            r
+            for r in results
             if r.similarity_score is not None and r.similarity_score >= self._min_relevance
         ]
 
@@ -346,9 +344,7 @@ class MemoryBridge:
 
         # 최근 검색 기록 업데이트
         for cm in composed:
-            self._recent_retrievals[cm.memory_id] = (
-                self._recent_retrievals.get(cm.memory_id, 0) + 1
-            )
+            self._recent_retrievals[cm.memory_id] = self._recent_retrievals.get(cm.memory_id, 0) + 1
 
         details = [
             {
@@ -452,7 +448,9 @@ class MemoryBridge:
         turn = Turn(turn_id=turn_id, role=Role.USER, content=user_message)
         decision = self._agent.decide(turn=turn, recent_turns=[], turn_position=0.0)
 
-        action_str = decision.action.value if hasattr(decision.action, "value") else str(decision.action)
+        action_str = (
+            decision.action.value if hasattr(decision.action, "value") else str(decision.action)
+        )
         result: dict[str, Any] = {
             "action": action_str,
             "turn_id": turn_id,

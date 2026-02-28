@@ -63,7 +63,8 @@ async def memory_save(
     Args:
         content: The memory content to save (Korean or English text).
         keywords: Optional list of keywords. Auto-extracted if not provided.
-        category: Memory category. One of: fact, preference, experience, emotion, technical, core_principle.
+        category: Memory category. One of: fact, preference,
+            experience, emotion, technical, core_principle.
         related_ids: Optional list of memory IDs to link as related.
         immutable: If True, memory cannot be updated or deleted.
         pinned: If True, memory is protected from the forgetting pipeline.
@@ -80,7 +81,9 @@ async def memory_save(
         return json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         logger.exception("memory_save failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
@@ -94,7 +97,8 @@ async def memory_search(
     Args:
         query: Search query text (Korean or English).
         top_k: Number of results to return (default: 5, max: 200).
-        category: Optional category filter (fact/preference/experience/emotion/technical/core_principle).
+        category: Optional category filter
+            (fact/preference/experience/emotion/technical/core_principle).
     """
     try:
         top_k = max(1, min(top_k, 200))
@@ -102,7 +106,9 @@ async def memory_search(
         return json.dumps({"results": results, "count": len(results)}, ensure_ascii=False)
     except Exception as exc:
         logger.exception("memory_search failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
@@ -123,7 +129,8 @@ async def auto_search(
     Args:
         user_message: The user's current message to find relevant memories for.
         token_budget: Maximum tokens for the composed context (default: 1024).
-        top_k: Number of memories to retrieve (default: 10, use higher values like 100 for memory review).
+        top_k: Number of memories to retrieve (default: 10,
+            use higher values like 100 for memory review).
     """
     try:
         token_budget = max(64, min(token_budget, 8192))
@@ -136,7 +143,9 @@ async def auto_search(
         return json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         logger.exception("auto_search failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
@@ -161,7 +170,9 @@ async def memory_update(
         return json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         logger.exception("memory_update failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
@@ -180,7 +191,9 @@ async def memory_delete(
         return json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         logger.exception("memory_delete failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
@@ -200,7 +213,9 @@ async def memory_get_related(
         return json.dumps({"results": results, "count": len(results)}, ensure_ascii=False)
     except Exception as exc:
         logger.exception("memory_get_related failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
@@ -217,7 +232,9 @@ async def memory_pin(
         return json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         logger.exception("memory_pin failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
@@ -234,7 +251,9 @@ async def memory_unpin(
         return json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         logger.exception("memory_unpin failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
@@ -245,12 +264,17 @@ async def memory_stats() -> str:
         return json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         logger.exception("memory_stats failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
 async def sleep_cycle_run() -> str:
-    """Run the memory sleep cycle: consolidation, resolution regeneration, forgetting, and checkpoint saving.
+    """Run the memory sleep cycle.
+
+    Performs consolidation, resolution regeneration, forgetting,
+    and checkpoint saving.
 
     This performs periodic memory maintenance. Recommended to run periodically
     (e.g., daily or after many conversations).
@@ -260,7 +284,9 @@ async def sleep_cycle_run() -> str:
         return json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         logger.exception("sleep_cycle_run failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
@@ -275,7 +301,9 @@ async def policy_status() -> str:
         return json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         logger.exception("policy_status failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 @mcp.tool()
@@ -301,7 +329,9 @@ async def policy_decide(
         return json.dumps(result, ensure_ascii=False)
     except Exception as exc:
         logger.exception("policy_decide failed")
-        return json.dumps({"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"})
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
 
 
 def main() -> None:

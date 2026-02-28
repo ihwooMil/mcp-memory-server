@@ -14,7 +14,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
 # ─── Conversation-level schemas ───
 
 
@@ -149,10 +148,7 @@ class RewardBreakdown(BaseModel):
             "r11_user_feedback": 1.0,
         }
         w = weights or default_weights
-        self.total = sum(
-            w.get(field, 1.0) * getattr(self, field)
-            for field in default_weights
-        )
+        self.total = sum(w.get(field, 1.0) * getattr(self, field) for field in default_weights)
         return self.total
 
 

@@ -40,7 +40,11 @@ class GraphRetriever:
         self._word_re = re.compile(self._lp.word_extraction_pattern)
 
     def retrieve(
-        self, query: str, top_k: int = 20, final_k: int = 5, track_access: bool = True,
+        self,
+        query: str,
+        top_k: int = 20,
+        final_k: int = 5,
+        track_access: bool = True,
     ) -> list[MemoryNode]:
         """Hybrid retrieval combining vector and graph signals."""
         # 1. Vector search
@@ -131,7 +135,8 @@ class GraphRetriever:
             r"FastAPI|Flask|Spring|Rails|Vue|Angular|Next\.js|"
             r"MySQL|PostgreSQL|Redis|MongoDB|AWS|GCP|Azure|"
             r"PyTorch|TensorFlow|Keras|Claude|GPT)(?![a-zA-Z])",
-            text, re.IGNORECASE,
+            text,
+            re.IGNORECASE,
         )
         entities.extend(tech_words)
 

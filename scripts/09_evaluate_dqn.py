@@ -21,10 +21,9 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
-
 from aimemory.extractor.dataset import EmbeddingDataset
 from aimemory.extractor.model import DualHeadDQN
+from torch.utils.data import DataLoader
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -68,8 +67,7 @@ def compute_accuracy(
 
     overall_acc = correct / max(total, 1)
     class_acc = {
-        ACTION_NAMES[cls]: class_correct[cls] / max(class_total[cls], 1)
-        for cls in range(3)
+        ACTION_NAMES[cls]: class_correct[cls] / max(class_total[cls], 1) for cls in range(3)
     }
     class_recall = class_acc  # same as accuracy when measured per-class
 
@@ -137,9 +135,7 @@ def compute_feature_quality(
         other_mask = actions != cls
         if other_mask.sum() > 0:
             n_other = min(other_mask.sum(), 500)
-            other_indices = np.random.choice(
-                np.where(other_mask)[0], n_other, replace=False
-            )
+            other_indices = np.random.choice(np.where(other_mask)[0], n_other, replace=False)
             other_features = features_norm[other_indices]
             inter_sim = (sub @ other_features.T).mean()
         else:
@@ -156,11 +152,15 @@ def compute_feature_quality(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate trained DQN")
     parser.add_argument(
-        "--data-dir", type=Path, default=Path("data/embeddings/test"),
+        "--data-dir",
+        type=Path,
+        default=Path("data/embeddings/test"),
         help="Test embedding directory",
     )
     parser.add_argument(
-        "--checkpoint", type=Path, default=Path("checkpoints/extractor/best_model.pt"),
+        "--checkpoint",
+        type=Path,
+        default=Path("checkpoints/extractor/best_model.pt"),
         help="Model checkpoint path",
     )
     parser.add_argument("--batch-size", type=int, default=512)

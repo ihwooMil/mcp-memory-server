@@ -26,24 +26,24 @@ from aimemory.selfplay.llm_client import LLMClient, is_korean_text
 
 # Patterns that indicate meta/instructional text rather than real dialogue
 _META_PATTERNS = re.compile(
-    r"^\s*[\(（]|"       # starts with parenthesis
-    r"예시\s*형식|"      # "예시 형식"
-    r"다음\s*턴|"        # "다음 턴"
-    r"이후로도|"         # "이후로도"
-    r"이런\s*식으로|"    # "이런 식으로"
-    r"추가\s*입력|"      # "추가 입력"
+    r"^\s*[\(（]|"  # starts with parenthesis
+    r"예시\s*형식|"  # "예시 형식"
+    r"다음\s*턴|"  # "다음 턴"
+    r"이후로도|"  # "이후로도"
+    r"이런\s*식으로|"  # "이런 식으로"
+    r"추가\s*입력|"  # "추가 입력"
     r"계속해서\s*제공|"  # "계속해서 제공"
-    r"참고로|"           # "참고로"
-    r"위 내용을|"        # "위 내용을"
-    r"다음과 같이|"      # "다음과 같이"
-    r"아래는|"           # "아래는"
-    r"^\s*Sure|"         # "Sure"
-    r"^\s*Here|"         # "Here"
-    r"^\s*Let me",       # "Let me"
+    r"참고로|"  # "참고로"
+    r"위 내용을|"  # "위 내용을"
+    r"다음과 같이|"  # "다음과 같이"
+    r"아래는|"  # "아래는"
+    r"^\s*Sure|"  # "Sure"
+    r"^\s*Here|"  # "Here"
+    r"^\s*Let me",  # "Let me"
     re.MULTILINE,
 )
-from aimemory.selfplay.memory_agent import MemoryAgent, MemoryStore
-from aimemory.selfplay.scenarios import KOREAN_ONLY_RULE, ScenarioManager, Topic
+from aimemory.selfplay.memory_agent import MemoryAgent, MemoryStore  # noqa: E402
+from aimemory.selfplay.scenarios import KOREAN_ONLY_RULE, ScenarioManager, Topic  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +97,7 @@ class SelfPlayEngine:
             episodes.append(episode)
 
             # Save episode to disk
-            checkpoint_path.write_text(
-                episode.model_dump_json(indent=2), encoding="utf-8"
-            )
+            checkpoint_path.write_text(episode.model_dump_json(indent=2), encoding="utf-8")
             logger.info(
                 "Episode %d saved: %s turns, %d saves, %d retrieves",
                 ep_num,
@@ -110,9 +108,7 @@ class SelfPlayEngine:
 
             # Log checkpoint progress
             if (ep_num + 1) % self._selfplay_cfg.checkpoint_interval == 0:
-                logger.info(
-                    "Checkpoint: %d/%d episodes completed", ep_num + 1, num_episodes
-                )
+                logger.info("Checkpoint: %d/%d episodes completed", ep_num + 1, num_episodes)
 
         return episodes
 
@@ -165,9 +161,7 @@ class SelfPlayEngine:
 
         # Seed the conversation with a topic-appropriate opening
         seed_prompt = self.scenario_mgr.get_seed_prompt(topic)
-        target_turns = self._rng.randint(
-            self._selfplay_cfg.min_turns, self._selfplay_cfg.max_turns
-        )
+        target_turns = self._rng.randint(self._selfplay_cfg.min_turns, self._selfplay_cfg.max_turns)
 
         # Sliding window size: keep system prompt + last N messages
         # This prevents context from growing unbounded and slowing LLM inference.
@@ -196,7 +190,10 @@ class SelfPlayEngine:
                         memory_summary = "축적된 정보:\n" + "\n".join(
                             f"- {e.content}" for e in memory_store.entries
                         )
-                        windowed_user = [windowed_user[0], {"role": "system", "content": memory_summary}] + windowed_user[1:]
+                        windowed_user = [
+                            windowed_user[0],
+                            {"role": "system", "content": memory_summary},
+                        ] + windowed_user[1:]
                     user_content = self.user_client.chat(windowed_user)
 
                 # Filter meta/instructional text — retry once
@@ -223,7 +220,7 @@ class SelfPlayEngine:
                         "Turn %d: consecutive non-Korean user turns, switching topic",
                         turn_id,
                     )
-                    new_scenario = self.scenario_mgr.random_scenario()
+                    self.scenario_mgr.random_scenario()
                     new_topic = self.scenario_mgr.random_topic()
                     user_content = self.scenario_mgr.get_seed_prompt(new_topic)
                     # Reset conversation context to break the non-Korean loop
@@ -262,7 +259,10 @@ class SelfPlayEngine:
                 memory_summary = "축적된 정보:\n" + "\n".join(
                     f"- {e.content}" for e in memory_store.entries
                 )
-                assistant_ctx = [assistant_ctx[0], {"role": "system", "content": memory_summary}] + assistant_ctx[1:]
+                assistant_ctx = [
+                    assistant_ctx[0],
+                    {"role": "system", "content": memory_summary},
+                ] + assistant_ctx[1:]
             if decision.action == MemoryActionType.RETRIEVE and decision.retrieved_memories:
                 memory_ctx = "관련 기억:\n" + "\n".join(
                     f"- {m.content}" for m in decision.retrieved_memories
@@ -283,7 +283,7 @@ class SelfPlayEngine:
                     {"role": "assistant", "content": assistant_content},
                     {
                         "role": "user",
-                        "content": "한국어로 다시 설명해 주세요. 코드 없이 한국어로만 답변해 주세요.",
+                        "content": "한국어로 다시 설명해 주세요. 코드 없이 한국어로만 답변해 주세요.",  # noqa: E501
                     },
                 ]
                 retry_content = self.assistant_client.chat(redirect_ctx)
@@ -299,9 +299,7 @@ class SelfPlayEngine:
             episode.turns.append(assistant_turn)
 
             # Memory decision for assistant turn (A2: may SAVE if paraphrase detected)
-            asst_decision = self.memory_agent.decide(
-                assistant_turn, memory_store, episode.turns
-            )
+            asst_decision = self.memory_agent.decide(assistant_turn, memory_store, episode.turns)
             episode.memory_decisions.append(asst_decision)
             if asst_decision.action == MemoryActionType.SAVE and asst_decision.memory_entry:
                 memory_store.add(asst_decision.memory_entry)
@@ -321,7 +319,8 @@ class SelfPlayEngine:
             "save_rate": save_count / max(total_decisions, 1),
             "retrieve_rate": retrieve_count / max(total_decisions, 1),
             "skip_rate": skip_count / max(total_decisions, 1),
-            "avg_turn_length": sum(len(t.content) for t in episode.turns) / max(len(episode.turns), 1),
+            "avg_turn_length": sum(len(t.content) for t in episode.turns)
+            / max(len(episode.turns), 1),
             "num_memories": len(episode.memory_store),
         }
 
@@ -370,7 +369,7 @@ class SelfPlayEngine:
             {
                 "role": "system",
                 "content": (
-                    f"다음 내용을 자연스럽게 이전 대화를 참조하는 방식으로 한 문장으로 말하세요: {inject_prompt}"
+                    f"다음 내용을 자연스럽게 이전 대화를 참조하는 방식으로 한 문장으로 말하세요: {inject_prompt}"  # noqa: E501
                 ),
             }
         ]

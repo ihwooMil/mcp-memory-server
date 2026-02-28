@@ -27,6 +27,7 @@ VALID_CATEGORIES = {"fact", "preference", "experience", "emotion", "technical", 
 class ImmutableMemoryError(Exception):
     """Raised when attempting to modify or delete an immutable memory node."""
 
+
 # Multilingual embedding model
 DEFAULT_MODEL = "intfloat/multilingual-e5-small"
 
@@ -165,9 +166,7 @@ class GraphMemoryStore:
 
         meta = existing["metadatas"][0]
         if meta.get("immutable") == "true":
-            raise ImmutableMemoryError(
-                f"Cannot update immutable memory: {memory_id}"
-            )
+            raise ImmutableMemoryError(f"Cannot update immutable memory: {memory_id}")
 
         doc = content if content is not None else existing["documents"][0]
         if keywords is not None:
@@ -191,9 +190,7 @@ class GraphMemoryStore:
             return False
 
         if existing["metadatas"][0].get("immutable") == "true":
-            raise ImmutableMemoryError(
-                f"Cannot delete immutable memory: {memory_id}"
-            )
+            raise ImmutableMemoryError(f"Cannot delete immutable memory: {memory_id}")
 
         # Remove this node from related nodes' related_ids
         meta = existing["metadatas"][0]
@@ -300,9 +297,7 @@ class GraphMemoryStore:
 
         while queue:
             current_id, current_depth = queue.popleft()
-            fetched = self._collection.get(
-                ids=[current_id], include=["documents", "metadatas"]
-            )
+            fetched = self._collection.get(ids=[current_id], include=["documents", "metadatas"])
             if not fetched["ids"]:
                 continue
 
@@ -365,9 +360,7 @@ class GraphMemoryStore:
         """Return all memory nodes in the store."""
         all_data = self._collection.get(include=["documents", "metadatas"])
         nodes: list[MemoryNode] = []
-        for mid, doc, meta in zip(
-            all_data["ids"], all_data["documents"], all_data["metadatas"]
-        ):
+        for mid, doc, meta in zip(all_data["ids"], all_data["documents"], all_data["metadatas"]):
             node = _meta_to_node(mid, doc, meta)
             if not include_inactive and not node.active:
                 continue

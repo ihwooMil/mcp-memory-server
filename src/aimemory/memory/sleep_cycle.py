@@ -157,9 +157,7 @@ class SleepCycleRunner:
         start_time = time.time()
 
         # Count memories before
-        report.memory_count_before = len(
-            self.store.get_all_memories(include_inactive=True)
-        )
+        report.memory_count_before = len(self.store.get_all_memories(include_inactive=True))
 
         # Task 1: Memory consolidation
         if self.config.enable_consolidation:
@@ -240,9 +238,7 @@ class SleepCycleRunner:
                 logger.exception(msg)
 
         # Count memories after
-        report.memory_count_after = len(
-            self.store.get_all_memories(include_inactive=True)
-        )
+        report.memory_count_after = len(self.store.get_all_memories(include_inactive=True))
 
         report.finished_at = datetime.now().isoformat()
         report.duration_seconds = time.time() - start_time
@@ -272,9 +268,7 @@ class SleepCycleRunner:
             levels = generate_all_levels(node.content, node.keywords)
 
             # Update metadata with generated levels
-            existing = self.store._collection.get(
-                ids=[node.memory_id], include=["metadatas"]
-            )
+            existing = self.store._collection.get(ids=[node.memory_id], include=["metadatas"])
             if not existing["ids"]:
                 continue
 

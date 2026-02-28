@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import shutil
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from aimemory.memory.graph_store import GraphMemoryStore, ImmutableMemoryError, MemoryNode
+from aimemory.memory.graph_store import GraphMemoryStore, ImmutableMemoryError
 from aimemory.schemas import MemoryEntry
 from aimemory.selfplay.memory_agent import MemoryStore
 
@@ -71,7 +69,7 @@ class TestAddAndSearch:
         assert all(n.category == "preference" for n in results)
 
     def test_invalid_category_defaults_to_fact(self, store: GraphMemoryStore) -> None:
-        mid = store.add_memory(content="테스트", category="invalid_cat")
+        store.add_memory(content="테스트", category="invalid_cat")
         results = store.search("테스트")
         assert results[0].category == "fact"
 
@@ -213,9 +211,7 @@ class TestMigration:
             )
         )
 
-        new_store = GraphMemoryStore.from_legacy_store(
-            legacy, persist_directory=tmp_db
-        )
+        new_store = GraphMemoryStore.from_legacy_store(legacy, persist_directory=tmp_db)
         stats = new_store.get_stats()
         assert stats["total"] == 2
         assert "preference" in stats["categories"]
@@ -231,9 +227,7 @@ class TestMigration:
                 category="general",
             )
         )
-        new_store = GraphMemoryStore.from_legacy_store(
-            legacy, persist_directory=tmp_db
-        )
+        new_store = GraphMemoryStore.from_legacy_store(legacy, persist_directory=tmp_db)
         results = new_store.search("일반 정보")
         assert results[0].category == "fact"
 
@@ -247,9 +241,7 @@ class TestMigration:
                 category="technical",
             )
         )
-        new_store = GraphMemoryStore.from_legacy_store(
-            legacy, persist_directory=tmp_db
-        )
+        new_store = GraphMemoryStore.from_legacy_store(legacy, persist_directory=tmp_db)
         results = new_store.search("React 프론트엔드 개발")
         assert len(results) >= 1
         assert "React" in results[0].content
@@ -260,7 +252,7 @@ class TestMigration:
 
 class TestImmutableMemory:
     def test_add_immutable_memory(self, store: GraphMemoryStore) -> None:
-        mid = store.add_memory(
+        store.add_memory(
             content="사용자 개인정보를 외부에 공유하지 않는다",
             keywords=["원칙", "개인정보"],
             category="core_principle",
@@ -406,6 +398,7 @@ class TestKnowledgeGraphIntegration:
 
     def test_add_memory_auto_builds_kg(self, tmp_db: str) -> None:
         from aimemory.memory.knowledge_graph import KnowledgeGraph
+
         kg = KnowledgeGraph()
         store = GraphMemoryStore(persist_directory=tmp_db, knowledge_graph=kg)
         store.add_memory(
@@ -419,6 +412,7 @@ class TestKnowledgeGraphIntegration:
 
     def test_delete_memory_removes_kg_triples(self, tmp_db: str) -> None:
         from aimemory.memory.knowledge_graph import KnowledgeGraph
+
         kg = KnowledgeGraph()
         store = GraphMemoryStore(persist_directory=tmp_db, knowledge_graph=kg)
         mid = store.add_memory(

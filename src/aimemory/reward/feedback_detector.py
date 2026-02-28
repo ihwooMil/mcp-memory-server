@@ -14,19 +14,18 @@ from enum import Enum
 from aimemory.i18n import get_patterns
 from aimemory.schemas import MemoryActionType, Role, Turn
 
-
 # ─── Feedback taxonomy ───
 
 
 class FeedbackType(str, Enum):
     """Types of user feedback about memory operations."""
 
-    MEMORY_CORRECT = "memory_correct"      # +1.0: user confirms memory is correct
-    MEMORY_USEFUL = "memory_useful"        # +0.7: user finds recalled info helpful
-    MEMORY_FAILURE = "memory_failure"      # -1.0: user says memory is wrong/missing
-    MEMORY_ERROR = "memory_error"          # -1.5: user corrects factual memory error
+    MEMORY_CORRECT = "memory_correct"  # +1.0: user confirms memory is correct
+    MEMORY_USEFUL = "memory_useful"  # +0.7: user finds recalled info helpful
+    MEMORY_FAILURE = "memory_failure"  # -1.0: user says memory is wrong/missing
+    MEMORY_ERROR = "memory_error"  # -1.5: user corrects factual memory error
     REPEATED_QUESTION = "repeated_question"  # -0.8: agent asked the same thing again
-    NEUTRAL = "neutral"                    # 0.0: no memory-related feedback detected
+    NEUTRAL = "neutral"  # 0.0: no memory-related feedback detected
 
 
 _FEEDBACK_REWARDS: dict[FeedbackType, float] = {
@@ -45,8 +44,8 @@ class FeedbackSignal:
 
     signal_type: FeedbackType
     reward_value: float
-    confidence: float        # 0.0–1.0
-    matched_pattern: str     # the regex/pattern that triggered detection
+    confidence: float  # 0.0–1.0
+    matched_pattern: str  # the regex/pattern that triggered detection
 
 
 # ─── Character n-gram based similarity ───
@@ -111,7 +110,8 @@ class FeedbackDetector:
 
         # 1. Check for repeated questions
         repeated_signal = self._detect_repeated_question(
-            current_turn, previous_turns,
+            current_turn,
+            previous_turns,
         )
         if repeated_signal is not None:
             return repeated_signal

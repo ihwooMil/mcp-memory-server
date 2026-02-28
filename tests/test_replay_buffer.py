@@ -14,6 +14,7 @@ def make_state(value: float = 0.0, size: int = 4) -> np.ndarray:
 # Basic push / sample
 # ---------------------------------------------------------------------------
 
+
 def test_push_and_sample_basic():
     buf = ReplayBuffer(capacity=100)
     for i in range(10):
@@ -36,6 +37,7 @@ def test_len_returns_correct_count():
 # Capacity overflow — oldest items dropped
 # ---------------------------------------------------------------------------
 
+
 def test_capacity_overflow_drops_oldest():
     capacity = 5
     buf = ReplayBuffer(capacity=capacity)
@@ -51,6 +53,7 @@ def test_capacity_overflow_drops_oldest():
 # ---------------------------------------------------------------------------
 # Error conditions
 # ---------------------------------------------------------------------------
+
 
 def test_sample_empty_buffer_raises():
     buf = ReplayBuffer()
@@ -69,6 +72,7 @@ def test_sample_batch_larger_than_buffer_raises():
 # Save / load round-trip
 # ---------------------------------------------------------------------------
 
+
 def test_save_load_roundtrip(tmp_path):
     buf = ReplayBuffer(capacity=50)
     for i in range(20):
@@ -84,19 +88,20 @@ def test_save_load_roundtrip(tmp_path):
     assert len(buf2) == len(buf)
     orig = list(buf._buffer)
     loaded = list(buf2._buffer)
-    for o, l in zip(orig, loaded):
-        assert o.action == l.action
-        assert o.reward == pytest.approx(l.reward)
-        np.testing.assert_array_equal(o.state, l.state)
+    for o, loaded_exp in zip(orig, loaded):
+        assert o.action == loaded_exp.action
+        assert o.reward == pytest.approx(loaded_exp.reward)
+        np.testing.assert_array_equal(o.state, loaded_exp.state)
         if o.next_state is None:
-            assert l.next_state is None
+            assert loaded_exp.next_state is None
         else:
-            np.testing.assert_array_equal(o.next_state, l.next_state)
+            np.testing.assert_array_equal(o.next_state, loaded_exp.next_state)
 
 
 # ---------------------------------------------------------------------------
 # Experience namedtuple fields
 # ---------------------------------------------------------------------------
+
 
 def test_experience_namedtuple_fields():
     state = make_state(1.0)
@@ -116,6 +121,7 @@ def test_experience_allows_none_next_state():
 # ---------------------------------------------------------------------------
 # Multiple pushes produce valid samples
 # ---------------------------------------------------------------------------
+
 
 def test_multiple_pushes_sampling_valid():
     buf = ReplayBuffer(capacity=200)

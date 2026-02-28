@@ -16,7 +16,6 @@ from aimemory.online.gossip import (
 from aimemory.online.policy import FEATURE_DIM, OnlinePolicy
 from aimemory.online.rule_verifier import RuleVerifier
 
-
 # ─── Krum algorithm tests ────────────────────────────────────────────
 
 
@@ -153,7 +152,9 @@ def _get_fresh_policy() -> OnlinePolicy:
     policy._rng = np.random.default_rng()
 
     import torch
+
     from aimemory.online.policy import _BanditMLP
+
     policy._model = _BanditMLP(FEATURE_DIM, 64, 3)
     policy._optimizer = torch.optim.SGD(policy._model.parameters(), lr=0.01)
     return policy
@@ -165,7 +166,10 @@ class TestGossipNode:
         policy_a = _get_fresh_policy()
         transport_a = InMemoryTransport("A", bus)
         node_a = GossipNode(
-            node_id="A", policy=policy_a, transport=transport_a, max_norm=0.5,
+            node_id="A",
+            policy=policy_a,
+            transport=transport_a,
+            max_norm=0.5,
         )
 
         # Register B as peer of A (A sends to B via A's own transport)
@@ -207,7 +211,10 @@ class TestGossipNode:
             policy = _get_fresh_policy()
             transport = InMemoryTransport(name, bus)
             nodes[name] = GossipNode(
-                node_id=name, policy=policy, transport=transport, max_norm=1.0,
+                node_id=name,
+                policy=policy,
+                transport=transport,
+                max_norm=1.0,
             )
 
         # Register peers (fully connected)
@@ -222,10 +229,7 @@ class TestGossipNode:
             for _ in range(5):
                 node._policy.update(features, action_id=i % 3, reward=float(i))
 
-        params_before = {
-            name: node._policy.get_parameters().copy()
-            for name, node in nodes.items()
-        }
+        params_before = {name: node._policy.get_parameters().copy() for name, node in nodes.items()}
 
         # Gossip round: all send, then all aggregate
         for node in nodes.values():
@@ -244,7 +248,10 @@ class TestGossipNode:
         policy = _get_fresh_policy()
         transport = InMemoryTransport("A", bus)
         node_a = GossipNode(
-            node_id="A", policy=policy, transport=transport, gossip_interval=5,
+            node_id="A",
+            policy=policy,
+            transport=transport,
+            gossip_interval=5,
         )
         node_a.register_peer("B", transport)
 
@@ -267,7 +274,10 @@ class TestGossipNode:
         policy = _get_fresh_policy()
         transport = InMemoryTransport("honest", bus)
         honest_node = GossipNode(
-            node_id="honest", policy=policy, transport=transport, max_norm=1.0,
+            node_id="honest",
+            policy=policy,
+            transport=transport,
+            max_norm=1.0,
         )
 
         params_before = policy.get_parameters().copy()
@@ -302,19 +312,23 @@ class TestDPNoise:
 
     def test_dp_noise_scale_proportional_to_max_norm(self):
         """Higher max_norm → larger noise variance."""
-        rng = np.random.default_rng(0)
+        np.random.default_rng(0)
         delta = np.zeros(1000, dtype=np.float64)
 
         # Run many samples and compare empirical std
         n_samples = 50
-        std_low = np.std([
-            _add_dp_noise(delta.copy(), max_norm=0.1, epsilon=1.0, delta_dp=1e-5)
-            for _ in range(n_samples)
-        ])
-        std_high = np.std([
-            _add_dp_noise(delta.copy(), max_norm=10.0, epsilon=1.0, delta_dp=1e-5)
-            for _ in range(n_samples)
-        ])
+        std_low = np.std(
+            [
+                _add_dp_noise(delta.copy(), max_norm=0.1, epsilon=1.0, delta_dp=1e-5)
+                for _ in range(n_samples)
+            ]
+        )
+        std_high = np.std(
+            [
+                _add_dp_noise(delta.copy(), max_norm=10.0, epsilon=1.0, delta_dp=1e-5)
+                for _ in range(n_samples)
+            ]
+        )
         assert std_high > std_low, "Larger max_norm should produce larger noise"
 
     def test_dp_disabled_no_noise(self):

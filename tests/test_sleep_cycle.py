@@ -13,10 +13,9 @@ from aimemory.config import SleepCycleConfig
 from aimemory.memory.consolidation import (
     ConsolidationResult,
     MemoryConsolidator,
-    MergeRecord,
 )
 from aimemory.memory.graph_store import GraphMemoryStore
-from aimemory.memory.sleep_cycle import SleepCycleReport, SleepCycleRunner
+from aimemory.memory.sleep_cycle import SleepCycleRunner
 
 
 @pytest.fixture()
@@ -80,8 +79,8 @@ class TestMemoryConsolidator:
 
     def test_merge_preserves_keywords(self, store: GraphMemoryStore) -> None:
         """Merged memory should contain the union of both memories' keywords."""
-        m1 = store.add_memory(content="저는 매일 아침 커피를 마셔요.", keywords=["커피", "아침"])
-        m2 = store.add_memory(content="저는 매일 아침 커피를 마셔요.", keywords=["커피", "음료"])
+        store.add_memory(content="저는 매일 아침 커피를 마셔요.", keywords=["커피", "아침"])
+        store.add_memory(content="저는 매일 아침 커피를 마셔요.", keywords=["커피", "음료"])
 
         consolidator = MemoryConsolidator(store, similarity_threshold=0.90)
         duplicates = consolidator.find_duplicates()
@@ -91,9 +90,7 @@ class TestMemoryConsolidator:
             record = consolidator.merge_pair(keeper, absorbed)
 
             # Get the surviving memory
-            surviving = store._collection.get(
-                ids=[record.surviving_id], include=["metadatas"]
-            )
+            surviving = store._collection.get(ids=[record.surviving_id], include=["metadatas"])
             keywords_str = surviving["metadatas"][0].get("keywords", "")
             keywords = [k.strip() for k in keywords_str.split(",") if k.strip()]
 

@@ -59,7 +59,8 @@ class ImplicitRewardDetector:
             words = self._word_re.findall(content)
             tech_words = re.findall(
                 r"(?<![a-zA-Z])(?:Python|Java|React|Django|Docker|Rust|TypeScript)(?![a-zA-Z])",
-                content, re.IGNORECASE,
+                content,
+                re.IGNORECASE,
             )
             keywords.extend(words)
             keywords.extend(tech_words)

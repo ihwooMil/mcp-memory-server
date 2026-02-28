@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
+from aimemory.config import AppConfig, OnlinePolicyConfig
 from aimemory.online.policy import (
     ACTION_MAP,
     FEATURE_DIM,
@@ -16,9 +17,7 @@ from aimemory.online.policy import (
     OnlinePolicy,
     StateEncoder,
 )
-from aimemory.config import AppConfig, OnlinePolicyConfig
 from aimemory.schemas import MemoryActionType, MemoryDecision, Role, Turn
-
 
 # ─── StateEncoder tests ──────────────────────────────────────────────
 
@@ -188,7 +187,10 @@ class TestMemoryPolicyAgent:
 
         # Mock GraphMemoryStore
         self.mock_store = MagicMock()
-        self.mock_store.get_stats.return_value = {"total": 5, "categories": {"fact": 3, "preference": 2}}
+        self.mock_store.get_stats.return_value = {
+            "total": 5,
+            "categories": {"fact": 3, "preference": 2},
+        }
         self.mock_store.add_memory.return_value = "mem_abc123"
         self.mock_store.search.return_value = []
 
@@ -213,7 +215,11 @@ class TestMemoryPolicyAgent:
         turn = self._make_turn("Python을 좋아합니다")
         decision = self.agent.decide(turn, [])
         assert isinstance(decision, MemoryDecision)
-        assert decision.action in (MemoryActionType.SAVE, MemoryActionType.SKIP, MemoryActionType.RETRIEVE)
+        assert decision.action in (
+            MemoryActionType.SAVE,
+            MemoryActionType.SKIP,
+            MemoryActionType.RETRIEVE,
+        )
 
     def test_save_action_calls_store(self):
         """When policy selects SAVE, graph_store.add_memory should be called."""
@@ -304,20 +310,20 @@ class TestPolicyIntegration:
 
 # ─── Importance scoring tests ───
 
+
 class TestImportanceScoring:
     """Tests for MemoryPolicyAgent._compute_importance()."""
 
     def _make_agent(self):
         """Create agent with mock store."""
         from unittest.mock import MagicMock
+
         store = MagicMock()
         store.get_stats.return_value = {"total": 5}
         store.search.return_value = []
         detector = MagicMock()
         policy = OnlinePolicy(epsilon=0.0)
-        return MemoryPolicyAgent(
-            graph_store=store, policy=policy, feedback_detector=detector
-        )
+        return MemoryPolicyAgent(graph_store=store, policy=policy, feedback_detector=detector)
 
     def test_personal_info_high_importance(self):
         """Personal info feature → importance >= 0.4."""
@@ -370,30 +376,27 @@ class TestImportanceScoring:
 
 # ─── Rule-based decision tests ───
 
+
 class TestRuleBasedDecision:
     """Tests for the 3-phase decide() logic."""
 
     def _make_agent_with_mock(self):
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import MagicMock
+
         store = MagicMock()
         store.get_stats.return_value = {"total": 5}
         store.search.return_value = []
         store.add_memory.return_value = "mem_123"
         detector = MagicMock()
         policy = OnlinePolicy(epsilon=0.0)
-        agent = MemoryPolicyAgent(
-            graph_store=store, policy=policy, feedback_detector=detector
-        )
+        agent = MemoryPolicyAgent(graph_store=store, policy=policy, feedback_detector=detector)
         return agent
 
     def test_high_importance_always_saves(self):
         """importance >= 0.7 → always SAVE regardless of bandit."""
         agent = self._make_agent_with_mock()
         # Personal + preference + tech = 0.4 + 0.35 + 0.3 = 1.05 → capped to 1.0
-        turn = Turn(
-            turn_id=0, role=Role.USER,
-            content="저는 Python 개발자예요. 코딩을 좋아해요."
-        )
+        turn = Turn(turn_id=0, role=Role.USER, content="저는 Python 개발자예요. 코딩을 좋아해요.")
         # Multiple calls should always SAVE
         for _ in range(5):
             decision = agent.decide(turn, [])
@@ -418,18 +421,18 @@ class TestRuleBasedDecision:
 
 # ─── Should retrieve tests ───
 
+
 class TestShouldRetrieve:
     """Tests for _should_retrieve()."""
 
     def _make_agent(self, total_memories=5):
         from unittest.mock import MagicMock
+
         store = MagicMock()
         store.get_stats.return_value = {"total": total_memories}
         detector = MagicMock()
         policy = OnlinePolicy(epsilon=0.0)
-        return MemoryPolicyAgent(
-            graph_store=store, policy=policy, feedback_detector=detector
-        )
+        return MemoryPolicyAgent(graph_store=store, policy=policy, feedback_detector=detector)
 
     def test_question_triggers_retrieve(self):
         """Question pattern → should retrieve."""
@@ -463,6 +466,7 @@ class TestShouldRetrieve:
 
 
 # ─── OnlinePolicyConfig tests ───
+
 
 class TestOnlinePolicyConfig:
     """Tests for the new OnlinePolicyConfig."""

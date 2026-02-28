@@ -97,7 +97,10 @@ class EpisodeSplitter:
 
         logger.info(
             "Splitting %d episodes → train=%d, val=%d, test=%d",
-            total, n_train, n_val, n_test,
+            total,
+            n_train,
+            n_val,
+            n_test,
         )
 
         train_ids: list[str] = []

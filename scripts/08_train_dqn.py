@@ -18,12 +18,12 @@ import logging
 from pathlib import Path
 
 import torch
-from torch.utils.data import DataLoader
-
-from aimemory.config import ExtractorConfig
 from aimemory.extractor.dataset import EmbeddingDataset
 from aimemory.extractor.model import DualHeadDQN
 from aimemory.extractor.trainer import OfflineDQNTrainer
+from torch.utils.data import DataLoader
+
+from aimemory.config import ExtractorConfig
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -32,11 +32,15 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train offline Double DQN")
     parser.add_argument(
-        "--data-dir", type=Path, default=Path("data/embeddings"),
+        "--data-dir",
+        type=Path,
+        default=Path("data/embeddings"),
         help="Directory with {train,val}/  embedding arrays",
     )
     parser.add_argument(
-        "--output-dir", type=Path, default=Path("checkpoints/extractor"),
+        "--output-dir",
+        type=Path,
+        default=Path("checkpoints/extractor"),
         help="Directory to save checkpoints",
     )
     parser.add_argument("--epochs", type=int, default=20)

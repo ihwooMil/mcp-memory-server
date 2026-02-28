@@ -9,8 +9,6 @@ from __future__ import annotations
 import pytest
 
 from aimemory.mcp.bridge import MemoryBridge
-from aimemory.schemas import Role, Turn
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────
 
@@ -145,7 +143,6 @@ def test_e2e_progressive_autonomy_threshold_relaxation(enhanced_bridge):
     autonomy = policy.autonomy
     initial_save = autonomy.save_threshold
     initial_skip = autonomy.skip_threshold
-    initial_zone = autonomy.rl_zone_ratio
 
     # Record 60 positive feedbacks
     for _ in range(60):
@@ -180,8 +177,9 @@ def test_e2e_legacy_mode_unchanged(legacy_bridge):
     assert legacy_bridge._retriever is None
 
     # Standard OnlinePolicy (not Enhanced)
-    from aimemory.online.policy import OnlinePolicy
     from aimemory.online.enhanced_policy import EnhancedOnlinePolicy
+    from aimemory.online.policy import OnlinePolicy
+
     assert isinstance(legacy_bridge._policy, OnlinePolicy)
     assert not isinstance(legacy_bridge._policy, EnhancedOnlinePolicy)
 

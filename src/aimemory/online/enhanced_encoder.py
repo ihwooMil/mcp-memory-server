@@ -1,13 +1,19 @@
 from __future__ import annotations
-import numpy as np
+
 from typing import Callable
+
+import numpy as np
+
 from aimemory.online.policy import StateEncoder
 from aimemory.schemas import MemoryActionType, Turn
+
 
 class EnhancedStateEncoder:
     """384d embedding + 10d hand-crafted → 394d state."""
 
-    def __init__(self, st_model: str = "intfloat/multilingual-e5-small", emb_dim: int = 384, lang: str = "ko"):
+    def __init__(
+        self, st_model: str = "intfloat/multilingual-e5-small", emb_dim: int = 384, lang: str = "ko"
+    ):
         self._base_encoder = StateEncoder(lang=lang)
         self._embedding_fn: Callable | None = None
         self._st_model = st_model
@@ -23,7 +29,7 @@ class EnhancedStateEncoder:
         if self._embedding_fn is not None:
             result = self._embedding_fn([text])
             # Handle various return types (list of lists, numpy arrays, etc.)
-            if hasattr(result, '__iter__'):
+            if hasattr(result, "__iter__"):
                 emb = result[0] if len(result) > 0 else np.zeros(self._emb_dim)
                 return np.array(emb, dtype=np.float32)
         return np.zeros(self._emb_dim, dtype=np.float32)

@@ -12,8 +12,6 @@ from aimemory.config import RewardConfig
 from aimemory.reward.calculator import RewardCalculator
 from aimemory.reward.signals import (
     compute_r1_keyword_reappearance,
-    compute_r10_topic_boundary,
-    compute_r11_user_feedback,
     compute_r2_repeated_question_penalty,
     compute_r3_efficiency,
     compute_r4_retrieval_relevance,
@@ -22,9 +20,12 @@ from aimemory.reward.signals import (
     compute_r7_info_density,
     compute_r8_preference_constraint,
     compute_r9_emotional_salience,
+    compute_r10_topic_boundary,
+    compute_r11_user_feedback,
 )
 from aimemory.schemas import (
     Action,
+    Episode,
     MemoryActionType,
     MemoryDecision,
     MemoryEntry,
@@ -35,23 +36,42 @@ from aimemory.schemas import (
     Turn,
 )
 
-
 # ─── Shared fixtures ───
+
 
 @pytest.fixture
 def korean_turns() -> list[Turn]:
     return [
-        Turn(turn_id=0, role=Role.USER,
-             content="저는 서울에 살고 있어요. 주로 강남구에서 일하고 있습니다.", token_count=20),
-        Turn(turn_id=1, role=Role.ASSISTANT,
-             content="서울 강남구에 거주하시는군요. 어떤 일을 하시나요?", token_count=18),
-        Turn(turn_id=2, role=Role.USER,
-             content="저는 소프트웨어 엔지니어예요. 주로 Python과 Rust를 사용합니다.", token_count=22),
-        Turn(turn_id=3, role=Role.ASSISTANT,
-             content="Python과 Rust 둘 다 사용하시는군요! 어떤 프로젝트에 쓰시나요?", token_count=20),
-        Turn(turn_id=4, role=Role.USER,
-             content="근데, 저 사실 요즘 새 프로젝트를 시작했어요. AI 관련 프로젝트입니다.",
-             token_count=24),
+        Turn(
+            turn_id=0,
+            role=Role.USER,
+            content="저는 서울에 살고 있어요. 주로 강남구에서 일하고 있습니다.",
+            token_count=20,
+        ),
+        Turn(
+            turn_id=1,
+            role=Role.ASSISTANT,
+            content="서울 강남구에 거주하시는군요. 어떤 일을 하시나요?",
+            token_count=18,
+        ),
+        Turn(
+            turn_id=2,
+            role=Role.USER,
+            content="저는 소프트웨어 엔지니어예요. 주로 Python과 Rust를 사용합니다.",
+            token_count=22,
+        ),
+        Turn(
+            turn_id=3,
+            role=Role.ASSISTANT,
+            content="Python과 Rust 둘 다 사용하시는군요! 어떤 프로젝트에 쓰시나요?",
+            token_count=20,
+        ),
+        Turn(
+            turn_id=4,
+            role=Role.USER,
+            content="근데, 저 사실 요즘 새 프로젝트를 시작했어요. AI 관련 프로젝트입니다.",
+            token_count=24,
+        ),
     ]
 
 
@@ -85,6 +105,7 @@ def retrieve_action() -> Action:
 
 
 # ─── R1: Keyword reappearance ───
+
 
 class TestR1KeywordReappearance:
     def test_keyword_appears_in_future(self, basic_state, save_action, korean_turns):
@@ -124,6 +145,7 @@ class TestR1KeywordReappearance:
 
 # ─── R2: Repeated question penalty ───
 
+
 class TestR2RepeatedQuestionPenalty:
     def test_no_history(self):
         """No previous turns → no penalty."""
@@ -133,50 +155,45 @@ class TestR2RepeatedQuestionPenalty:
 
     def test_clarification_excluded(self):
         """Clarification questions should NOT be penalized."""
-        history = [
-            Turn(turn_id=0, role=Role.USER, content="Python 설치하는 법 알려주세요.")
-        ]
+        history = [Turn(turn_id=0, role=Role.USER, content="Python 설치하는 법 알려주세요.")]
         # Re-asking for clarification should be fine
-        current = Turn(
-            turn_id=2, role=Role.USER,
-            content="무슨 말인지 좀 더 설명해주실 수 있나요?"
-        )
+        current = Turn(turn_id=2, role=Role.USER, content="무슨 말인지 좀 더 설명해주실 수 있나요?")
         score = compute_r2_repeated_question_penalty(current, history)
         assert score == 0.0
 
     def test_genuine_repeated_question(self):
         """Asking the same thing twice without clarification → penalty."""
         history = [
-            Turn(turn_id=0, role=Role.USER,
-                 content="저는 서울 강남구에 살고 있어요. 직업은 엔지니어입니다.")
+            Turn(
+                turn_id=0,
+                role=Role.USER,
+                content="저는 서울 강남구에 살고 있어요. 직업은 엔지니어입니다.",
+            )
         ]
         # Same content rephrased slightly
         current = Turn(
-            turn_id=2, role=Role.USER,
-            content="저는 서울 강남구에 살고 있어요. 직업은 엔지니어입니다."
+            turn_id=2,
+            role=Role.USER,
+            content="저는 서울 강남구에 살고 있어요. 직업은 엔지니어입니다.",
         )
         score = compute_r2_repeated_question_penalty(current, history)
         assert score <= 0.0
 
     def test_elaboration_excluded(self):
         """Elaboration requests should not be penalized."""
-        history = [
-            Turn(turn_id=0, role=Role.USER, content="머신러닝 알려주세요.")
-        ]
-        current = Turn(
-            turn_id=2, role=Role.USER,
-            content="좀 더 자세히 설명해주세요."
-        )
+        history = [Turn(turn_id=0, role=Role.USER, content="머신러닝 알려주세요.")]
+        current = Turn(turn_id=2, role=Role.USER, content="좀 더 자세히 설명해주세요.")
         score = compute_r2_repeated_question_penalty(current, history)
         assert score == 0.0
 
 
 # ─── R3: Compression efficiency ───
 
+
 class TestR3Efficiency:
     def test_good_compression(self):
         """Shorter but info-dense summary → positive score."""
-        original = "저는 요즘 Python으로 데이터 분석 프로젝트를 진행하고 있어요. pandas와 numpy를 많이 사용합니다."
+        original = "저는 요즘 Python으로 데이터 분석 프로젝트를 진행하고 있어요. pandas와 numpy를 많이 사용합니다."  # noqa: E501
         compressed = "Python 데이터 분석, pandas/numpy 사용"
         score = compute_r3_efficiency(original, compressed)
         assert score > 0.0
@@ -202,6 +219,7 @@ class TestR3Efficiency:
 
 
 # ─── R4: Retrieval relevance ───
+
 
 class TestR4RetrievalRelevance:
     def test_relevant_retrieval(self):
@@ -244,6 +262,7 @@ class TestR4RetrievalRelevance:
 
 # ─── R5: Speech act weight ───
 
+
 class TestR5SpeechActWeight:
     def test_formal_endings(self):
         """Formal 합쇼체 endings → high score."""
@@ -269,6 +288,7 @@ class TestR5SpeechActWeight:
 
 
 # ─── R6: Self-reference ───
+
 
 class TestR6SelfReference:
     def test_first_person_with_preference(self):
@@ -296,6 +316,7 @@ class TestR6SelfReference:
 
 # ─── R7: Information density ───
 
+
 class TestR7InfoDensity:
     def test_noun_heavy_text(self):
         """Text with many nouns → higher density."""
@@ -306,7 +327,7 @@ class TestR7InfoDensity:
     def test_function_word_heavy_text(self):
         """Text dominated by particles/endings → lower density."""
         text = "그래서 그리고 하지만 그런데 어쨌든"
-        score_func = compute_r7_info_density(text)
+        compute_r7_info_density(text)
         noun_text = "Python Java 서울 강남 데이터"
         score_noun = compute_r7_info_density(noun_text)
         # noun-heavy should have >= density (or just be > 0)
@@ -318,6 +339,7 @@ class TestR7InfoDensity:
 
 
 # ─── R8: Preference/constraint ───
+
 
 class TestR8PreferenceConstraint:
     def test_preference_expression(self):
@@ -358,6 +380,7 @@ class TestR8PreferenceConstraint:
 
 # ─── R9: Emotional salience ───
 
+
 class TestR9EmotionalSalience:
     def test_emphasis_with_content(self):
         """Emphasis + substantive content → positive score."""
@@ -367,7 +390,6 @@ class TestR9EmotionalSalience:
 
     def test_emphasis_without_content(self):
         """No emphasis word at all → zero score."""
-        text = "오늘 날씨가 정말 좋네요."
         # "정말" is an emphasis but no emphasis word in EMPHASIS_EXPRESSIONS matches text
         # Actually check: "정말" IS in EMPHASIS_EXPRESSIONS
         # Use text with no emphasis at all
@@ -387,37 +409,39 @@ class TestR9EmotionalSalience:
 
 # ─── R10: Topic boundary ───
 
+
 class TestR10TopicBoundary:
     def test_discourse_marker_with_summary(self):
         """Discourse marker + prior summary → full reward."""
-        turn = Turn(turn_id=4, role=Role.USER,
-                    content="근데, 다른 얘기인데 새 프로젝트 이야기 해도 될까요?")
+        turn = Turn(
+            turn_id=4, role=Role.USER, content="근데, 다른 얘기인데 새 프로젝트 이야기 해도 될까요?"
+        )
         score = compute_r10_topic_boundary(turn, previous_summary="이전 주제: Python 학습")
         assert score == 1.0
 
     def test_discourse_marker_no_summary(self):
         """Discourse marker but no prior summary → partial reward."""
-        turn = Turn(turn_id=4, role=Role.USER,
-                    content="그나저나 요즘 Rust도 공부하고 있어요.")
+        turn = Turn(turn_id=4, role=Role.USER, content="그나저나 요즘 Rust도 공부하고 있어요.")
         score = compute_r10_topic_boundary(turn, previous_summary=None)
         assert score == 0.5
 
     def test_no_discourse_marker(self):
         """No discourse marker → zero."""
-        turn = Turn(turn_id=4, role=Role.USER,
-                    content="Python으로 데이터 분석하는 방법을 알려주세요.")
+        turn = Turn(
+            turn_id=4, role=Role.USER, content="Python으로 데이터 분석하는 방법을 알려주세요."
+        )
         score = compute_r10_topic_boundary(turn, previous_summary="요약 내용")
         assert score == 0.0
 
     def test_aah_맞다_marker(self):
         """'아 맞다' is a discourse marker."""
-        turn = Turn(turn_id=5, role=Role.USER,
-                    content="아 맞다, 저 오늘 면접이 있어요.")
+        turn = Turn(turn_id=5, role=Role.USER, content="아 맞다, 저 오늘 면접이 있어요.")
         score = compute_r10_topic_boundary(turn, previous_summary="이전 주제 요약")
         assert score == 1.0
 
 
 # ─── R11: User feedback ───
+
 
 class TestR11UserFeedback:
     def test_positive_feedback(self):
@@ -447,6 +471,7 @@ class TestR11UserFeedback:
 
 
 # ─── RewardCalculator integration tests ───
+
 
 class TestRewardCalculator:
     def test_compute_save_action(self, basic_state, save_action, korean_turns):
@@ -502,7 +527,8 @@ class TestRewardCalculator:
         """A turn with strong preference patterns should yield high R8."""
         calc = RewardCalculator()
         pref_turn = Turn(
-            turn_id=0, role=Role.USER,
+            turn_id=0,
+            role=Role.USER,
             content="항상 한국어로 답변해주세요. 절대 영어로 쓰지 마세요.",
         )
         state = State(
@@ -529,7 +555,8 @@ class TestRewardCalculator:
         """A turn with negative feedback yields negative R11."""
         calc = RewardCalculator()
         feedback_turn = Turn(
-            turn_id=5, role=Role.USER,
+            turn_id=5,
+            role=Role.USER,
             content="아니 그게 아니라 제가 말씀드린 건 다른 내용이에요.",
         )
         state = State(
@@ -552,7 +579,8 @@ class TestRewardCalculator:
         """A turn with discourse marker + prior summary yields R10 = 1.0."""
         calc = RewardCalculator()
         boundary_turn = Turn(
-            turn_id=6, role=Role.USER,
+            turn_id=6,
+            role=Role.USER,
             content="그건 그렇고, 요즘 새로 시작한 사이드 프로젝트가 있어요.",
         )
         state = State(
@@ -599,19 +627,21 @@ class TestRewardCalculator:
     def test_custom_weights(self, basic_state, korean_turns):
         """Custom weights produce different total than default."""
         default_calc = RewardCalculator(config=RewardConfig())
-        custom_config = RewardConfig(weights={
-            "r1_keyword_reappearance": 2.0,
-            "r2_repeated_question_penalty": 2.0,
-            "r3_efficiency": 2.0,
-            "r4_retrieval_relevance": 2.0,
-            "r5_speech_act_weight": 2.0,
-            "r6_self_reference": 2.0,
-            "r7_info_density": 2.0,
-            "r8_preference_constraint": 2.0,
-            "r9_emotional_salience": 2.0,
-            "r10_topic_boundary": 2.0,
-            "r11_user_feedback": 2.0,
-        })
+        custom_config = RewardConfig(
+            weights={
+                "r1_keyword_reappearance": 2.0,
+                "r2_repeated_question_penalty": 2.0,
+                "r3_efficiency": 2.0,
+                "r4_retrieval_relevance": 2.0,
+                "r5_speech_act_weight": 2.0,
+                "r6_self_reference": 2.0,
+                "r7_info_density": 2.0,
+                "r8_preference_constraint": 2.0,
+                "r9_emotional_salience": 2.0,
+                "r10_topic_boundary": 2.0,
+                "r11_user_feedback": 2.0,
+            }
+        )
         custom_calc = RewardCalculator(config=custom_config)
 
         action = Action(
@@ -622,10 +652,14 @@ class TestRewardCalculator:
         current_turn = korean_turns[2]
 
         default_breakdown = default_calc.compute(
-            state=basic_state, action=action, current_turn=current_turn,
+            state=basic_state,
+            action=action,
+            current_turn=current_turn,
         )
         custom_breakdown = custom_calc.compute(
-            state=basic_state, action=action, current_turn=current_turn,
+            state=basic_state,
+            action=action,
+            current_turn=current_turn,
         )
         # Custom (all 2x) total should differ from default
         # They can be equal only if all signals are 0, which is unlikely
@@ -636,18 +670,31 @@ class TestRewardCalculator:
 
 # ─── compute_episode_rewards tests ───
 
+
 class TestComputeEpisodeRewards:
-    def _make_episode(self) -> "Episode":
-        from aimemory.schemas import Episode, MemoryDecision, MemoryEntry, ScenarioType
+    def _make_episode(self) -> Episode:
+        from aimemory.schemas import Episode, MemoryDecision, MemoryEntry
 
         episode = Episode(scenario=ScenarioType.CASUAL_CHAT)
         # Turns: user turn 0 → SAVE, future turn 2 mentions keywords
-        t0 = Turn(turn_id=0, role=Role.USER,
-                  content="저는 Python 개발자예요. 서울에 살고 있어요.", token_count=15)
-        t1 = Turn(turn_id=1, role=Role.ASSISTANT,
-                  content="Python 개발자시군요, 어떤 프로젝트 하세요?", token_count=14)
-        t2 = Turn(turn_id=2, role=Role.USER,
-                  content="Python으로 머신러닝 프로젝트를 하고 있어요.", token_count=14)
+        t0 = Turn(
+            turn_id=0,
+            role=Role.USER,
+            content="저는 Python 개발자예요. 서울에 살고 있어요.",
+            token_count=15,
+        )
+        t1 = Turn(
+            turn_id=1,
+            role=Role.ASSISTANT,
+            content="Python 개발자시군요, 어떤 프로젝트 하세요?",
+            token_count=14,
+        )
+        t2 = Turn(
+            turn_id=2,
+            role=Role.USER,
+            content="Python으로 머신러닝 프로젝트를 하고 있어요.",
+            token_count=14,
+        )
         episode.turns = [t0, t1, t2]
 
         memory_entry = MemoryEntry(
@@ -700,17 +747,19 @@ class TestComputeEpisodeRewards:
 
     def test_compute_episode_rewards_topic_summary(self):
         """R10 gets topic summary when discourse markers are present."""
-        from aimemory.schemas import Episode, MemoryDecision, MemoryEntry, ScenarioType
+        from aimemory.schemas import Episode, MemoryDecision, MemoryEntry
 
         calc = RewardCalculator()
         episode = Episode(scenario=ScenarioType.CASUAL_CHAT)
-        t0 = Turn(turn_id=0, role=Role.USER,
-                  content="저는 Python 개발자예요.", token_count=10)
-        t1 = Turn(turn_id=1, role=Role.ASSISTANT,
-                  content="좋은 직업이네요!", token_count=8)
+        t0 = Turn(turn_id=0, role=Role.USER, content="저는 Python 개발자예요.", token_count=10)
+        t1 = Turn(turn_id=1, role=Role.ASSISTANT, content="좋은 직업이네요!", token_count=8)
         # Turn 2 has discourse marker "근데" → should trigger topic summary from cumulative memories
-        t2 = Turn(turn_id=2, role=Role.USER,
-                  content="근데, 다른 얘기인데 저 요즘 이직을 고민하고 있어요.", token_count=16)
+        t2 = Turn(
+            turn_id=2,
+            role=Role.USER,
+            content="근데, 다른 얘기인데 저 요즘 이직을 고민하고 있어요.",
+            token_count=16,
+        )
         episode.turns = [t0, t1, t2]
 
         mem = MemoryEntry(content="Python 개발자", source_turn_id=0, keywords=["Python"])
@@ -726,6 +775,7 @@ class TestComputeEpisodeRewards:
 
 
 # ─── R3 keyword preservation tests ───
+
 
 class TestR3KeywordPreservation:
     def test_r3_keyword_preservation(self):
@@ -744,6 +794,7 @@ class TestR3KeywordPreservation:
 
 
 # ─── R6 graduated scoring tests ───
+
 
 class TestR6GraduatedScoring:
     def test_r6_graduated_scoring(self):
@@ -775,6 +826,7 @@ class TestR6GraduatedScoring:
 
 # ─── R4 proper keywords tests ───
 
+
 class TestR4ProperKeywords:
     def test_r4_proper_keywords(self):
         """R4 uses extracted keywords (not split()) for better matching."""
@@ -796,7 +848,8 @@ class TestR4ProperKeywords:
             retrieved_count=1,
         )
         current_turn = Turn(
-            turn_id=3, role=Role.USER,
+            turn_id=3,
+            role=Role.USER,
             content="Python 프로젝트 어떻게 되고 있어요?",
         )
         breakdown = calc.compute(

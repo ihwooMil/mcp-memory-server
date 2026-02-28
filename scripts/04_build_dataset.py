@@ -31,7 +31,7 @@ import pyarrow.parquet as pq
 from aimemory.config import AppConfig, DataPaths
 from aimemory.dataset.builder import EpisodeBuilder
 from aimemory.dataset.splitter import EpisodeSplitter
-from aimemory.schemas import Episode, RewardBreakdown, SARTriple
+from aimemory.schemas import Episode, RewardBreakdown
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,9 +41,7 @@ logger = logging.getLogger("04_build_dataset")
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Build Parquet dataset from episode JSONL files"
-    )
+    parser = argparse.ArgumentParser(description="Build Parquet dataset from episode JSONL files")
     parser.add_argument("--input-dir", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--seed", type=int, default=42)
@@ -52,7 +50,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_episodes_from_dir(input_dir: Path, use_rewards: bool = True) -> tuple[list[Episode], dict[str, dict[int, RewardBreakdown]]]:
+def load_episodes_from_dir(
+    input_dir: Path, use_rewards: bool = True
+) -> tuple[list[Episode], dict[str, dict[int, RewardBreakdown]]]:
     """Load all episodes and their reward annotations from JSONL files.
 
     Returns:
@@ -86,9 +86,7 @@ def load_episodes_from_dir(input_dir: Path, use_rewards: bool = True) -> tuple[l
                             reward_maps[episode.episode_id] = ep_rewards
 
                 except Exception as exc:
-                    logger.error(
-                        "Parse error line %d in %s: %s", line_num, jsonl_file.name, exc
-                    )
+                    logger.error("Parse error line %d in %s: %s", line_num, jsonl_file.name, exc)
 
     logger.info(
         "Loaded %d episodes, %d with reward annotations",
@@ -127,9 +125,7 @@ def main() -> None:
         return
 
     # Load episodes
-    episodes, reward_maps = load_episodes_from_dir(
-        input_dir, use_rewards=not args.no_rewards
-    )
+    episodes, reward_maps = load_episodes_from_dir(input_dir, use_rewards=not args.no_rewards)
 
     if not episodes:
         logger.error("No episodes found in %s", input_dir)

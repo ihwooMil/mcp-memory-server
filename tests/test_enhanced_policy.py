@@ -7,9 +7,6 @@ import pytest
 
 from aimemory.online.enhanced_policy import EnhancedOnlinePolicy
 from aimemory.online.policy import OnlinePolicy
-from aimemory.online.replay_buffer import ReplayBuffer
-from aimemory.online.autonomy import ProgressiveAutonomy
-
 
 FEATURE_DIM = 394
 
@@ -152,8 +149,8 @@ def test_inherits_online_policy_interface():
 
 
 def test_parameter_count_larger_than_base():
-    from aimemory.online.policy import _BanditMLP
     from aimemory.online.enhanced_policy import _EnhancedMLP
+    from aimemory.online.policy import _BanditMLP
 
     base = _BanditMLP(feature_dim=10, hidden_dim=64, n_actions=3)
     enhanced = _EnhancedMLP(feature_dim=394, hidden1=256, hidden2=128, n_actions=3)

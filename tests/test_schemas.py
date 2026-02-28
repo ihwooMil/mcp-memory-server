@@ -12,7 +12,6 @@ from aimemory.schemas import (
     Role,
     SARTriple,
     ScenarioType,
-    State,
     Turn,
 )
 

@@ -113,9 +113,7 @@ class EpisodeBuilder:
             return []
 
         # Build a turn_id → decision lookup
-        decision_by_turn: dict[int, object] = {
-            d.turn_id: d for d in episode.memory_decisions
-        }
+        {d.turn_id: d for d in episode.memory_decisions}
 
         # Track cumulative memory entries as we step through decisions
         cumulative_memory: list = []
@@ -158,9 +156,7 @@ class EpisodeBuilder:
                 next_decision = decisions_sorted[step_index + 1]
                 next_turn_id = next_decision.turn_id
                 if next_turn_id < len(episode.turns):
-                    next_state = self._build_state(
-                        episode, next_turn_id, list(cumulative_memory)
-                    )
+                    next_state = self._build_state(episode, next_turn_id, list(cumulative_memory))
                 else:
                     next_state = None
                     done = True
@@ -201,9 +197,7 @@ class EpisodeBuilder:
                 reward_map = reward_maps.get(episode.episode_id)
             triples = self.episode_to_sar_triples(episode, reward_map=reward_map)
             all_triples.extend(triples)
-            logger.debug(
-                "Episode %s → %d triples", episode.episode_id, len(triples)
-            )
+            logger.debug("Episode %s → %d triples", episode.episode_id, len(triples))
         return all_triples
 
     def iter_episodes_from_jsonl(self, path: Path) -> Iterator[Episode]:
@@ -239,9 +233,7 @@ class EpisodeBuilder:
                 "state_recent_turns_json": json.dumps(
                     [turn.model_dump(mode="json") for turn in t.state.recent_turns]
                 ),
-                "state_memory_summary_json": json.dumps(
-                    t.state.current_memory_summary
-                ),
+                "state_memory_summary_json": json.dumps(t.state.current_memory_summary),
                 # Action scalars
                 "action_type": t.action.action_type.value,
                 "action_retrieved_count": t.action.retrieved_count,

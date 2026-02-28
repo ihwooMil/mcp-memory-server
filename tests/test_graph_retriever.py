@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
+from aimemory.memory.graph_retriever import GraphRetriever
 from aimemory.memory.graph_store import MemoryNode
 from aimemory.memory.knowledge_graph import KnowledgeGraph
-from aimemory.memory.graph_retriever import GraphRetriever
 
 
 def _make_node(
@@ -156,7 +157,7 @@ def test_extract_entities_korean(mock_store: MagicMock, kg: KnowledgeGraph) -> N
     assert len(entities) > 0
     # All extracted entities should be 2+ char Korean sequences
     for e in entities:
-        if all("\uAC00" <= c <= "\uD7A3" for c in e):
+        if all("\uac00" <= c <= "\ud7a3" for c in e):
             assert len(e) >= 2
     # The tokens containing "사용자" and "봉골레" should be present
     assert any("사용자" in e for e in entities)

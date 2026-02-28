@@ -17,7 +17,6 @@ Options:
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import sys
 import time
@@ -39,9 +38,7 @@ logger = logging.getLogger("02_generate_episodes")
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Generate synthetic self-play episodes"
-    )
+    parser = argparse.ArgumentParser(description="Generate synthetic self-play episodes")
     parser.add_argument("--num-episodes", type=int, default=1000)
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--checkpoint-interval", type=int, default=10)
@@ -86,7 +83,9 @@ def main() -> None:
 
     remaining = args.num_episodes - existing
     if remaining <= 0:
-        logger.info("Already have %d episodes (target: %d). Nothing to do.", existing, args.num_episodes)
+        logger.info(
+            "Already have %d episodes (target: %d). Nothing to do.", existing, args.num_episodes
+        )
         return
 
     logger.info(
@@ -117,6 +116,7 @@ def main() -> None:
 
     try:
         from tqdm import tqdm
+
         progress = tqdm(total=remaining, desc="Episodes", unit="ep")
     except ImportError:
         progress = None
@@ -134,7 +134,11 @@ def main() -> None:
             ep_start = time.time()
             try:
                 topic_idx = ep_num - existing
-                topic = topic_plan[topic_idx] if topic_idx < len(topic_plan) else engine.scenario_mgr.random_topic()
+                topic = (
+                    topic_plan[topic_idx]
+                    if topic_idx < len(topic_plan)
+                    else engine.scenario_mgr.random_topic()
+                )
                 scenario = topic.scenario_type
                 episode = engine.run_episode(scenario, episode_index=ep_num, topic=topic)
 
@@ -166,9 +170,12 @@ def main() -> None:
                     elapsed = time.time() - start_time
                     rate = generated / elapsed * 3600 if elapsed > 0 else 0
                     logger.info(
-                        "Progress: %d/%d episodes (%.0f ep/hr) | Korean: %d/%d (%.0f%%) | Saves: %d",
-                        generated, remaining, rate,
-                        total_korean, total_turns,
+                        "Progress: %d/%d episodes (%.0f ep/hr) | Korean: %d/%d (%.0f%%) | Saves: %d",  # noqa: E501
+                        generated,
+                        remaining,
+                        rate,
+                        total_korean,
+                        total_turns,
                         total_korean / total_turns * 100 if total_turns else 0,
                         total_saves,
                     )
@@ -194,9 +201,12 @@ def main() -> None:
     logger.info("=" * 60)
     logger.info("Generation complete!")
     logger.info("  Episodes: %d generated in %.1f min (%.0f ep/hr)", generated, elapsed / 60, rate)
-    logger.info("  Korean: %d/%d turns (%.1f%%)",
-                total_korean, total_turns,
-                total_korean / total_turns * 100 if total_turns else 0)
+    logger.info(
+        "  Korean: %d/%d turns (%.1f%%)",
+        total_korean,
+        total_turns,
+        total_korean / total_turns * 100 if total_turns else 0,
+    )
     logger.info("  Memory: %d saves, %d retrieves", total_saves, total_retrieves)
     logger.info("  Output: %s", out_path)
 

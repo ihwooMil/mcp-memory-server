@@ -26,7 +26,8 @@ class KnowledgeGraph:
     def add_triple(self, subject: str, predicate: str, object_: str, memory_id: str) -> None:
         """Add a single (subject, predicate, object) triple with source memory_id."""
         self._graph.add_edge(
-            subject, object_,
+            subject,
+            object_,
             predicate=predicate,
             memory_id=memory_id,
         )
@@ -34,8 +35,7 @@ class KnowledgeGraph:
     def remove_triples_by_memory(self, memory_id: str) -> int:
         """Remove all triples associated with a memory_id. Returns count removed."""
         edges_to_remove = [
-            (u, v) for u, v, d in self._graph.edges(data=True)
-            if d.get("memory_id") == memory_id
+            (u, v) for u, v, d in self._graph.edges(data=True) if d.get("memory_id") == memory_id
         ]
         self._graph.remove_edges_from(edges_to_remove)
         # Clean up isolated nodes
@@ -145,19 +145,23 @@ class KnowledgeGraph:
 
         relations: list[dict] = []
         for _, target, data in self._graph.out_edges(entity, data=True):
-            relations.append({
-                "direction": "outgoing",
-                "predicate": data.get("predicate", ""),
-                "target": target,
-                "memory_id": data.get("memory_id", ""),
-            })
+            relations.append(
+                {
+                    "direction": "outgoing",
+                    "predicate": data.get("predicate", ""),
+                    "target": target,
+                    "memory_id": data.get("memory_id", ""),
+                }
+            )
         for source, _, data in self._graph.in_edges(entity, data=True):
-            relations.append({
-                "direction": "incoming",
-                "predicate": data.get("predicate", ""),
-                "source": source,
-                "memory_id": data.get("memory_id", ""),
-            })
+            relations.append(
+                {
+                    "direction": "incoming",
+                    "predicate": data.get("predicate", ""),
+                    "source": source,
+                    "memory_id": data.get("memory_id", ""),
+                }
+            )
 
         neighbors = set(self._graph.successors(entity)) | set(self._graph.predecessors(entity))
 

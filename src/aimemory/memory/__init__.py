@@ -13,9 +13,9 @@ from aimemory.memory.forgetting import (
     ForgettingThresholds,
     ImportanceCalculator,
 )
+from aimemory.memory.graph_retriever import GraphRetriever
 from aimemory.memory.graph_store import GraphMemoryStore, MemoryNode
 from aimemory.memory.knowledge_graph import KnowledgeGraph
-from aimemory.memory.graph_retriever import GraphRetriever
 from aimemory.memory.resolution import (
     MultiResolutionText,
     estimate_tokens,

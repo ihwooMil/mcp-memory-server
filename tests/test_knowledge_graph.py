@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-import pytest
-
 from aimemory.memory.graph_store import MemoryNode
 from aimemory.memory.knowledge_graph import KnowledgeGraph
 
@@ -15,6 +13,7 @@ def make_node(memory_id: str, level2_text: str, content: str = "test") -> Memory
 
 
 # ── Basic triple operations ───────────────────────────────────────────────────
+
 
 def test_add_triple_basic():
     kg = KnowledgeGraph()
@@ -66,6 +65,7 @@ def test_add_from_memory_empty_level2():
 
 # ── Depth traversal ───────────────────────────────────────────────────────────
 
+
 def test_get_related_entities_depth():
     kg = KnowledgeGraph()
     # Chain: A -> B -> C
@@ -76,7 +76,7 @@ def test_get_related_entities_depth():
     depth2 = kg.get_related_entities("A", depth=2)
 
     # At depth=1, only A->B edge visible from A
-    subjects_depth1 = {t[0] for t in depth1}
+    {t[0] for t in depth1}
     objects_depth1 = {t[2] for t in depth1}
     assert "C" not in objects_depth1
 
@@ -86,6 +86,7 @@ def test_get_related_entities_depth():
 
 
 # ── Memory ID lookups ─────────────────────────────────────────────────────────
+
 
 def test_get_memory_ids_for_entity():
     kg = KnowledgeGraph()
@@ -111,6 +112,7 @@ def test_get_memory_ids_for_unknown_entity():
 
 
 # ── Path queries ──────────────────────────────────────────────────────────────
+
 
 def test_query_path_exists():
     kg = KnowledgeGraph()
@@ -144,6 +146,7 @@ def test_query_path_missing_node():
 
 # ── Entity context ────────────────────────────────────────────────────────────
 
+
 def test_get_entity_context():
     kg = KnowledgeGraph()
     kg.add_triple("사용자", "좋아함", "커피", memory_id="mem1")
@@ -165,6 +168,7 @@ def test_get_entity_context_unknown():
 
 
 # ── Remove triples ────────────────────────────────────────────────────────────
+
 
 def test_remove_triples_by_memory():
     kg = KnowledgeGraph()
@@ -193,6 +197,7 @@ def test_remove_triples_cleans_isolated_nodes():
 
 # ── Stats ─────────────────────────────────────────────────────────────────────
 
+
 def test_stats():
     kg = KnowledgeGraph()
     assert kg.stats() == {"nodes": 0, "edges": 0, "components": 0}
@@ -207,6 +212,7 @@ def test_stats():
 
 
 # ── Rebuild from store ────────────────────────────────────────────────────────
+
 
 def test_rebuild_from_store():
     node1 = make_node("mem1", level2_text="A,loves,B")

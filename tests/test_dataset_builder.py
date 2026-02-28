@@ -9,18 +9,15 @@ import pytest
 from aimemory.config import DatasetConfig
 from aimemory.dataset.builder import EpisodeBuilder
 from aimemory.schemas import (
-    Action,
     Episode,
     MemoryActionType,
     MemoryDecision,
     MemoryEntry,
     RewardBreakdown,
     Role,
-    SARTriple,
     ScenarioType,
     Turn,
 )
-
 
 # ─── Fixtures ───
 
@@ -171,13 +168,11 @@ class TestStateBuilding:
         """Memory count in state should increase after a SAVE decision."""
         triples = builder.episode_to_sar_triples(minimal_episode)
         # Find the SAVE triple (turn_id=2)
-        save_triple = next(
-            t for t in triples if t.action.action_type == MemoryActionType.SAVE
-        )
+        save_triple = next(t for t in triples if t.action.action_type == MemoryActionType.SAVE)
         save_idx = save_triple.step_index
 
         if save_idx + 1 < len(triples):
-            next_triple = triples[save_idx + 1]
+            triples[save_idx + 1]
             # next_state of save_triple = state of next_triple
             assert save_triple.next_state is not None
             # Memory count should be higher in next_state
@@ -224,9 +219,7 @@ class TestActionConversion:
 
     def test_retrieve_action(self, builder, episode_with_retrieve):
         triples = builder.episode_to_sar_triples(episode_with_retrieve)
-        retrieve_triples = [
-            t for t in triples if t.action.action_type == MemoryActionType.RETRIEVE
-        ]
+        retrieve_triples = [t for t in triples if t.action.action_type == MemoryActionType.RETRIEVE]
         assert len(retrieve_triples) > 0
         for t in retrieve_triples:
             assert t.action.retrieved_count > 0
@@ -246,9 +239,7 @@ class TestRewardIntegration:
         )
         reward_map = {2: rb}  # turn_id=2 is the SAVE decision
         triples = builder.episode_to_sar_triples(minimal_episode, reward_map=reward_map)
-        save_triple = next(
-            t for t in triples if t.action.action_type == MemoryActionType.SAVE
-        )
+        save_triple = next(t for t in triples if t.action.action_type == MemoryActionType.SAVE)
         assert save_triple.reward.r1_keyword_reappearance == 0.8
         assert save_triple.reward.r3_efficiency == 0.5
         assert save_triple.reward.total == 1.3

@@ -14,7 +14,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -143,6 +142,7 @@ def plot_convergence(
     """Plot convergence curves."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:

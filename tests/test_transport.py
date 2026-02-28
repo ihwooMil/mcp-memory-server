@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 
 import numpy as np
-import pytest
 
 from aimemory.online.transport import TcpTransport
 
@@ -13,6 +12,7 @@ from aimemory.online.transport import TcpTransport
 def _get_free_port() -> int:
     """Get a free localhost port."""
     import socket
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]

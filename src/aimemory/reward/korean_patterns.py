@@ -254,12 +254,12 @@ EXPERIENCE_UTTERANCE_PATTERNS: list[str] = [
 # ─── MeCab POS tags for substantive morphemes ───
 # Noun POS tags used in R7 (info density)
 SUBSTANTIVE_POS_TAGS: set[str] = {
-    "NNG",   # 일반명사 (common noun)
-    "NNP",   # 고유명사 (proper noun)
-    "NNB",   # 의존명사 (bound noun)
-    "NR",    # 수사 (numeral)
-    "SL",    # 외래어 (foreign word / loanword)
-    "SH",    # 한자 (Chinese character)
+    "NNG",  # 일반명사 (common noun)
+    "NNP",  # 고유명사 (proper noun)
+    "NNB",  # 의존명사 (bound noun)
+    "NR",  # 수사 (numeral)
+    "SL",  # 외래어 (foreign word / loanword)
+    "SH",  # 한자 (Chinese character)
 }
 
 # Proper noun POS tag

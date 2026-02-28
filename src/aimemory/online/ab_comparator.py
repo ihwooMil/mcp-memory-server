@@ -19,14 +19,14 @@ class ABResult:
     """단일 A/B 비교 결과."""
 
     query: str
-    baseline_ids: list[str]        # ChromaDB 유사도 순서 top-k ID
-    reranked_ids: list[str]        # 리랭커 순서 top-k ID
-    overlap_count: int             # 두 결과 ID 교집합 수
-    baseline_avg_sim: float        # 기준선 top-k의 평균 유사도
-    reranked_avg_sim: float        # 리랭크된 top-k의 평균 유사도
-    reranked_avg_score: float      # 리랭커 점수 평균 (사용 가능 시)
-    position_changes: list[int]    # 각 리랭크 결과의 순위 변화 (기준선 대비)
-    latency_ms: float = 0.0        # rerank() 호출 지연 시간 (ms)
+    baseline_ids: list[str]  # ChromaDB 유사도 순서 top-k ID
+    reranked_ids: list[str]  # 리랭커 순서 top-k ID
+    overlap_count: int  # 두 결과 ID 교집합 수
+    baseline_avg_sim: float  # 기준선 top-k의 평균 유사도
+    reranked_avg_sim: float  # 리랭크된 top-k의 평균 유사도
+    reranked_avg_score: float  # 리랭커 점수 평균 (사용 가능 시)
+    position_changes: list[int]  # 각 리랭크 결과의 순위 변화 (기준선 대비)
+    latency_ms: float = 0.0  # rerank() 호출 지연 시간 (ms)
 
 
 @dataclass
@@ -34,10 +34,10 @@ class ABReport:
     """배치 A/B 비교 집계 보고서."""
 
     total_queries: int
-    avg_overlap: float             # 기준선과 리랭크 결과의 평균 겹침 비율
-    avg_position_change: float     # 평균 절대 순위 변화량
-    rerank_latency_ms_p50: float   # 리랭킹 지연 시간 p50 (ms)
-    rerank_latency_ms_p95: float   # 리랭킹 지연 시간 p95 (ms)
+    avg_overlap: float  # 기준선과 리랭크 결과의 평균 겹침 비율
+    avg_position_change: float  # 평균 절대 순위 변화량
+    rerank_latency_ms_p50: float  # 리랭킹 지연 시간 p50 (ms)
+    rerank_latency_ms_p95: float  # 리랭킹 지연 시간 p95 (ms)
     results: list[ABResult] = field(default_factory=list)
 
     def summary(self) -> str:
@@ -78,8 +78,7 @@ class ABComparator:
         baseline_nodes = candidates[:select_k]
         baseline_ids = [n.memory_id for n in baseline_nodes]
         baseline_avg_sim = float(
-            np.mean([n.similarity_score or 0.0 for n in baseline_nodes])
-            if baseline_nodes else 0.0
+            np.mean([n.similarity_score or 0.0 for n in baseline_nodes]) if baseline_nodes else 0.0
         )
 
         # 리랭크: 정책으로 재정렬
@@ -89,8 +88,7 @@ class ABComparator:
 
         reranked_ids = [n.memory_id for n in reranked_nodes]
         reranked_avg_sim = float(
-            np.mean([n.similarity_score or 0.0 for n in reranked_nodes])
-            if reranked_nodes else 0.0
+            np.mean([n.similarity_score or 0.0 for n in reranked_nodes]) if reranked_nodes else 0.0
         )
 
         # 겹침 수
@@ -161,11 +159,7 @@ class ABComparator:
         overlaps = [r.overlap_count / max(len(r.baseline_ids), 1) for r in results]
         avg_overlap = float(np.mean(overlaps))
 
-        all_position_changes = [
-            abs(delta)
-            for r in results
-            for delta in r.position_changes
-        ]
+        all_position_changes = [abs(delta) for r in results for delta in r.position_changes]
         avg_position_change = float(np.mean(all_position_changes)) if all_position_changes else 0.0
 
         latencies = [r.latency_ms for r in results]

@@ -11,12 +11,15 @@ from aimemory.selfplay.memory_agent import MemoryAgent, MemoryStore, extract_key
 def __getattr__(name: str):
     if name == "SelfPlayEngine":
         from aimemory.selfplay.engine import SelfPlayEngine
+
         return SelfPlayEngine
     if name == "LLMClient":
         from aimemory.selfplay.llm_client import LLMClient
+
         return LLMClient
     if name == "ScenarioManager":
         from aimemory.selfplay.scenarios import ScenarioManager
+
         return ScenarioManager
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

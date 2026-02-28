@@ -17,7 +17,6 @@ from aimemory.reward.feedback_detector import (
 )
 from aimemory.schemas import MemoryActionType, Role, Turn
 
-
 # ─── Fixtures ───
 
 
@@ -343,11 +342,13 @@ class TestRepeatedQuestion:
         """Identical assistant questions should trigger REPEATED_QUESTION."""
         prev = _make_turn(
             "어떤 프로그래밍 언어를 주로 사용하시나요?",
-            turn_id=1, role=Role.ASSISTANT,
+            turn_id=1,
+            role=Role.ASSISTANT,
         )
         current = _make_turn(
             "어떤 프로그래밍 언어를 주로 사용하시나요?",
-            turn_id=3, role=Role.ASSISTANT,
+            turn_id=3,
+            role=Role.ASSISTANT,
         )
         signal = detector.detect(current, [prev], MemoryActionType.SKIP)
         assert signal.signal_type == FeedbackType.REPEATED_QUESTION
@@ -357,11 +358,13 @@ class TestRepeatedQuestion:
         """Very similar assistant questions should trigger REPEATED_QUESTION."""
         prev = _make_turn(
             "주로 어떤 프로그래밍 언어를 사용하세요?",
-            turn_id=1, role=Role.ASSISTANT,
+            turn_id=1,
+            role=Role.ASSISTANT,
         )
         current = _make_turn(
             "어떤 프로그래밍 언어를 주로 사용하시나요?",
-            turn_id=3, role=Role.ASSISTANT,
+            turn_id=3,
+            role=Role.ASSISTANT,
         )
         signal = detector.detect(current, [prev], MemoryActionType.SKIP)
         assert signal.signal_type == FeedbackType.REPEATED_QUESTION
@@ -370,11 +373,13 @@ class TestRepeatedQuestion:
         """Different questions should not trigger REPEATED_QUESTION."""
         prev = _make_turn(
             "어떤 프로그래밍 언어를 사용하세요?",
-            turn_id=1, role=Role.ASSISTANT,
+            turn_id=1,
+            role=Role.ASSISTANT,
         )
         current = _make_turn(
             "서울에서 맛집 추천해 주세요.",
-            turn_id=3, role=Role.ASSISTANT,
+            turn_id=3,
+            role=Role.ASSISTANT,
         )
         signal = detector.detect(current, [prev], MemoryActionType.SKIP)
         assert signal.signal_type != FeedbackType.REPEATED_QUESTION
@@ -383,11 +388,13 @@ class TestRepeatedQuestion:
         """Repeated question detection only applies to assistant turns."""
         prev = _make_turn(
             "Python 설치 방법 알려주세요.",
-            turn_id=0, role=Role.USER,
+            turn_id=0,
+            role=Role.USER,
         )
         current = _make_turn(
             "Python 설치 방법 알려주세요.",
-            turn_id=2, role=Role.USER,
+            turn_id=2,
+            role=Role.USER,
         )
         signal = detector.detect(current, [prev], MemoryActionType.SKIP)
         # User repeating themselves is not detected as REPEATED_QUESTION
@@ -397,7 +404,8 @@ class TestRepeatedQuestion:
         """No previous turns means no repeat possible."""
         current = _make_turn(
             "어떤 프로그래밍 언어를 사용하세요?",
-            turn_id=1, role=Role.ASSISTANT,
+            turn_id=1,
+            role=Role.ASSISTANT,
         )
         signal = detector.detect(current, [], MemoryActionType.SKIP)
         assert signal.signal_type != FeedbackType.REPEATED_QUESTION
@@ -406,26 +414,28 @@ class TestRepeatedQuestion:
         """If history only has user turns, no repeat detected for assistant turn."""
         prev_user = _make_turn(
             "어떤 프로그래밍 언어를 사용하세요?",
-            turn_id=0, role=Role.USER,
+            turn_id=0,
+            role=Role.USER,
         )
         current = _make_turn(
             "어떤 프로그래밍 언어를 사용하세요?",
-            turn_id=1, role=Role.ASSISTANT,
+            turn_id=1,
+            role=Role.ASSISTANT,
         )
         signal = detector.detect(current, [prev_user], MemoryActionType.SKIP)
         assert signal.signal_type != FeedbackType.REPEATED_QUESTION
 
-    def test_repeated_takes_priority_over_memory_context(
-        self, detector: FeedbackDetector
-    ):
+    def test_repeated_takes_priority_over_memory_context(self, detector: FeedbackDetector):
         """Repeated question detection runs before memory context check."""
         prev = _make_turn(
             "좋아하는 음식이 뭐예요?",
-            turn_id=1, role=Role.ASSISTANT,
+            turn_id=1,
+            role=Role.ASSISTANT,
         )
         current = _make_turn(
             "좋아하는 음식이 뭐예요?",
-            turn_id=3, role=Role.ASSISTANT,
+            turn_id=3,
+            role=Role.ASSISTANT,
         )
         # Even after RETRIEVE, repeated question detection should fire first
         signal = detector.detect(current, [prev], MemoryActionType.RETRIEVE)
@@ -531,11 +541,13 @@ class TestEdgeCases:
         strict_detector = FeedbackDetector(repeated_question_threshold=0.99)
         prev = _make_turn(
             "어떤 언어를 사용하세요?",
-            turn_id=1, role=Role.ASSISTANT,
+            turn_id=1,
+            role=Role.ASSISTANT,
         )
         current = _make_turn(
             "어떤 언어를 사용하시나요?",
-            turn_id=3, role=Role.ASSISTANT,
+            turn_id=3,
+            role=Role.ASSISTANT,
         )
         signal = strict_detector.detect(current, [prev], MemoryActionType.SKIP)
         assert signal.signal_type != FeedbackType.REPEATED_QUESTION
@@ -600,6 +612,7 @@ class TestFeedbackSignal:
     def test_all_feedback_types_have_rewards(self):
         """Every FeedbackType should have a defined reward value."""
         from aimemory.reward.feedback_detector import _FEEDBACK_REWARDS
+
         for ft in FeedbackType:
             assert ft in _FEEDBACK_REWARDS
 
@@ -614,14 +627,18 @@ class TestDetectorIntegration:
         """Simulate: agent retrieves memory → user confirms."""
         asst_turn = _make_turn(
             "이전에 Python을 좋아하신다고 하셨는데, 맞으시죠?",
-            turn_id=3, role=Role.ASSISTANT,
+            turn_id=3,
+            role=Role.ASSISTANT,
         )
         user_turn = _make_turn(
             "맞아요! 잘 기억하시네요.",
-            turn_id=4, role=Role.USER,
+            turn_id=4,
+            role=Role.USER,
         )
         signal = detector.detect(
-            user_turn, [asst_turn], MemoryActionType.RETRIEVE,
+            user_turn,
+            [asst_turn],
+            MemoryActionType.RETRIEVE,
         )
         assert signal.signal_type == FeedbackType.MEMORY_CORRECT
 
@@ -629,14 +646,18 @@ class TestDetectorIntegration:
         """Simulate: agent retrieves wrong memory → user corrects."""
         asst_turn = _make_turn(
             "서울에 사신다고 하셨는데 맞나요?",
-            turn_id=3, role=Role.ASSISTANT,
+            turn_id=3,
+            role=Role.ASSISTANT,
         )
         user_turn = _make_turn(
             "아닌데요, 저는 부산에 살아요.",
-            turn_id=4, role=Role.USER,
+            turn_id=4,
+            role=Role.USER,
         )
         signal = detector.detect(
-            user_turn, [asst_turn], MemoryActionType.RETRIEVE,
+            user_turn,
+            [asst_turn],
+            MemoryActionType.RETRIEVE,
         )
         assert signal.signal_type == FeedbackType.MEMORY_ERROR
 
@@ -644,7 +665,8 @@ class TestDetectorIntegration:
         """After SKIP, general positive language is NEUTRAL."""
         user_turn = _make_turn(
             "맞아요, 오늘 날씨가 정말 좋죠.",
-            turn_id=2, role=Role.USER,
+            turn_id=2,
+            role=Role.USER,
         )
         signal = detector.detect(user_turn, [], MemoryActionType.SKIP)
         assert signal.signal_type == FeedbackType.NEUTRAL
@@ -653,24 +675,31 @@ class TestDetectorIntegration:
         """Repeated question is detected for assistant; user feedback is separate."""
         asst_prev = _make_turn(
             "좋아하는 프로그래밍 언어가 뭐예요?",
-            turn_id=1, role=Role.ASSISTANT,
+            turn_id=1,
+            role=Role.ASSISTANT,
         )
         asst_repeat = _make_turn(
             "좋아하는 프로그래밍 언어가 뭐예요?",
-            turn_id=5, role=Role.ASSISTANT,
+            turn_id=5,
+            role=Role.ASSISTANT,
         )
         # Repeated question for assistant turn
         signal = detector.detect(
-            asst_repeat, [asst_prev], MemoryActionType.RETRIEVE,
+            asst_repeat,
+            [asst_prev],
+            MemoryActionType.RETRIEVE,
         )
         assert signal.signal_type == FeedbackType.REPEATED_QUESTION
 
         # Separate user turn should get proper feedback classification
         user_turn = _make_turn(
             "이미 말했잖아요, Python이요.",
-            turn_id=6, role=Role.USER,
+            turn_id=6,
+            role=Role.USER,
         )
         signal2 = detector.detect(
-            user_turn, [asst_prev, asst_repeat], MemoryActionType.RETRIEVE,
+            user_turn,
+            [asst_prev, asst_repeat],
+            MemoryActionType.RETRIEVE,
         )
         assert signal2.signal_type == FeedbackType.MEMORY_FAILURE

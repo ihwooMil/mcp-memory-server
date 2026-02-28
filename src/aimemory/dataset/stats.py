@@ -15,7 +15,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
-from aimemory.schemas import Episode, MemoryActionType, SARTriple, ScenarioType
+from aimemory.schemas import Episode, MemoryActionType, SARTriple
 
 logger = logging.getLogger(__name__)
 
@@ -154,9 +154,7 @@ class DatasetStats:
             },
             "action_distribution": self.action_distribution.to_dict(),
             "episode_length_stats": self.episode_length_stats.to_dict(),
-            "scenario_breakdowns": {
-                k: v.to_dict() for k, v in self.scenario_breakdowns.items()
-            },
+            "scenario_breakdowns": {k: v.to_dict() for k, v in self.scenario_breakdowns.items()},
         }
 
 
@@ -198,9 +196,7 @@ class StatsComputer:
 
         # Episode length distribution
         ep_lengths = [len(ep.turns) for ep in episodes]
-        stats.episode_length_stats = DistributionStats.from_values(
-            [float(x) for x in ep_lengths]
-        )
+        stats.episode_length_stats = DistributionStats.from_values([float(x) for x in ep_lengths])
 
         # Reward distribution (total)
         total_rewards = [t.reward.total for t in triples]
@@ -225,9 +221,7 @@ class StatsComputer:
             ep_by_scenario[ep.scenario.value].append(ep)
 
         # Map episode_id → scenario for triple lookup
-        ep_to_scenario: dict[str, str] = {
-            ep.episode_id: ep.scenario.value for ep in episodes
-        }
+        ep_to_scenario: dict[str, str] = {ep.episode_id: ep.scenario.value for ep in episodes}
         triples_by_scenario: dict[str, list[SARTriple]] = defaultdict(list)
         for t in triples:
             scenario = ep_to_scenario.get(t.episode_id, "unknown")
@@ -285,12 +279,8 @@ class StatsComputer:
                 "count": len(triples),
                 "reward_stats": DistributionStats.from_values(rewards).to_dict(),
                 "action_ratios": {
-                    "save": round(
-                        action_counts.get(MemoryActionType.SAVE, 0) / total_actions, 4
-                    ),
-                    "skip": round(
-                        action_counts.get(MemoryActionType.SKIP, 0) / total_actions, 4
-                    ),
+                    "save": round(action_counts.get(MemoryActionType.SAVE, 0) / total_actions, 4),
+                    "skip": round(action_counts.get(MemoryActionType.SKIP, 0) / total_actions, 4),
                     "retrieve": round(
                         action_counts.get(MemoryActionType.RETRIEVE, 0) / total_actions,
                         4,

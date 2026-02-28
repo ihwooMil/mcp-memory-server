@@ -10,9 +10,7 @@ import json
 
 import pytest
 
-from aimemory.mcp import bridge as bridge_module
-from aimemory.mcp.server import mcp, _get_bridge
-
+from aimemory.mcp.server import mcp
 
 # ── Fixtures ──────────────────────────────────────────────────────────
 
@@ -20,8 +18,8 @@ from aimemory.mcp.server import mcp, _get_bridge
 @pytest.fixture(autouse=True)
 def isolated_bridge(tmp_path, monkeypatch):
     """Replace the global bridge singleton with an isolated test bridge."""
-    from aimemory.mcp.bridge import MemoryBridge
     import aimemory.mcp.server as server_module
+    from aimemory.mcp.bridge import MemoryBridge
 
     test_bridge = MemoryBridge(
         persist_directory=str(tmp_path / "mcp_test_db"),
@@ -54,9 +52,7 @@ def test_server_lists_tools():
         "policy_decide",
     }
 
-    assert expected_tools.issubset(tool_names), (
-        f"Missing tools: {expected_tools - tool_names}"
-    )
+    assert expected_tools.issubset(tool_names), f"Missing tools: {expected_tools - tool_names}"
 
 
 # ── Test 20: memory_save via MCP ──────────────────────────────────────

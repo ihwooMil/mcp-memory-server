@@ -1,6 +1,7 @@
 import pytest
+
 from aimemory.reward.implicit_detector import ImplicitRewardDetector
-from aimemory.schemas import Turn, Role
+from aimemory.schemas import Role, Turn
 
 
 @pytest.fixture

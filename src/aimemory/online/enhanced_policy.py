@@ -9,9 +9,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from aimemory.online.autonomy import ProgressiveAutonomy
 from aimemory.online.policy import OnlinePolicy
 from aimemory.online.replay_buffer import ReplayBuffer
-from aimemory.online.autonomy import ProgressiveAutonomy
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,9 @@ logger = logging.getLogger(__name__)
 class _EnhancedMLP(nn.Module):
     """Larger MLP: 394d → 256 → 128 → 3."""
 
-    def __init__(self, feature_dim: int = 394, hidden1: int = 256, hidden2: int = 128, n_actions: int = 3):
+    def __init__(
+        self, feature_dim: int = 394, hidden1: int = 256, hidden2: int = 128, n_actions: int = 3
+    ):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(feature_dim, hidden1),
@@ -92,8 +94,7 @@ class EnhancedOnlinePolicy(OnlinePolicy):
 
         # Periodic batch update from replay buffer
         self._update_count += 1
-        if (self._update_count % self._batch_update_interval == 0
-                and len(self._replay_buffer) >= 32):
+        if self._update_count % self._batch_update_interval == 0 and len(self._replay_buffer) >= 32:
             self.batch_update()
 
         return loss

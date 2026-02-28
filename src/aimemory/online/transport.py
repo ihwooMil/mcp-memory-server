@@ -52,9 +52,7 @@ class TcpTransport(Transport):
 
     async def start(self) -> None:
         """Start the TCP server to receive incoming messages."""
-        self._server = await asyncio.start_server(
-            self._handle_connection, self._host, self._port
-        )
+        self._server = await asyncio.start_server(self._handle_connection, self._host, self._port)
         self._running = True
         logger.info("Transport server started on %s:%d", self._host, self._port)
 
@@ -97,9 +95,7 @@ class TcpTransport(Transport):
         self._rule_hash_inbox.clear()
         return hashes
 
-    async def _async_send(
-        self, peer_id: str, msg_type: int, payload: bytes
-    ) -> None:
+    async def _async_send(self, peer_id: str, msg_type: int, payload: bytes) -> None:
         """Send a framed message to a peer."""
         if peer_id not in self._peer_addresses:
             logger.warning("Unknown peer: %s", peer_id)

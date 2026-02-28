@@ -27,6 +27,10 @@ import json
 import logging
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
@@ -93,6 +97,7 @@ def save_or_show(fig, output_dir: Path | None, name: str, fmt: str, dpi: int, sh
         logger.info("Saved figure: %s", path)
     if show:
         import matplotlib.pyplot as plt
+
         plt.show()
 
 
@@ -120,6 +125,7 @@ def plot_reward_distribution(
         ax.set_ylabel("Count")
         if rewards:
             import statistics
+
             mean_r = statistics.mean(rewards)
             ax.axvline(mean_r, color="red", linestyle="--", label=f"mean={mean_r:.3f}")
             ax.legend()
@@ -186,6 +192,7 @@ def plot_episode_length_distribution(
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.hist(lengths, bins=20, color="#4C72B0", alpha=0.75, edgecolor="white")
     import statistics
+
     mean_len = statistics.mean(lengths)
     ax.axvline(mean_len, color="red", linestyle="--", label=f"mean={mean_len:.1f}")
     ax.set_xlabel("Episode Length (turns)")
@@ -219,6 +226,7 @@ def plot_per_scenario_rewards(
 
     # Color boxes
     import itertools
+
     color_cycle = ["#4C72B0", "#DD8452", "#55A868", "#C44E52", "#8172B2", "#937860"]
     for patch, color in zip(bp["boxes"], itertools.cycle(color_cycle)):
         patch.set_facecolor(color)
@@ -241,27 +249,20 @@ def plot_reward_components(
     show: bool,
 ) -> None:
     """Plot mean reward per component as a horizontal bar chart."""
-    import matplotlib.pyplot as plt
     import statistics
+
+    import matplotlib.pyplot as plt
 
     if not component_data:
         return
 
     components = list(component_data.keys())
-    means = [
-        statistics.mean(vals) if vals else 0.0
-        for vals in component_data.values()
-    ]
-    stds = [
-        statistics.stdev(vals) if len(vals) > 1 else 0.0
-        for vals in component_data.values()
-    ]
+    means = [statistics.mean(vals) if vals else 0.0 for vals in component_data.values()]
+    stds = [statistics.stdev(vals) if len(vals) > 1 else 0.0 for vals in component_data.values()]
 
     fig, ax = plt.subplots(figsize=(8, max(4, len(components) * 0.5)))
     y_pos = range(len(components))
-    ax.barh(
-        list(y_pos), means, xerr=stds, color="#4C72B0", alpha=0.75, ecolor="gray"
-    )
+    ax.barh(list(y_pos), means, xerr=stds, color="#4C72B0", alpha=0.75, ecolor="gray")
     ax.set_yticks(list(y_pos))
     ax.set_yticklabels(components)
     ax.set_xlabel("Mean Reward ± Std")
@@ -273,7 +274,7 @@ def plot_reward_components(
 
 def main() -> None:
     args = parse_args()
-    config = AppConfig()
+    _config = AppConfig()  # noqa: F841
     paths = DataPaths()
 
     splits_dir: Path = args.splits_dir or paths.splits
@@ -283,9 +284,10 @@ def main() -> None:
 
     try:
         import matplotlib
+
         if args.no_show:
             matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # noqa: F401
     except ImportError:
         logger.error("matplotlib not installed. Run: uv add matplotlib")
         sys.exit(1)
@@ -308,9 +310,8 @@ def main() -> None:
             reward_by_split[split_name] = table.column("reward_total").to_pylist()
         if "action_type" in table.schema.names:
             from collections import Counter
-            action_by_split[split_name] = dict(
-                Counter(table.column("action_type").to_pylist())
-            )
+
+            action_by_split[split_name] = dict(Counter(table.column("action_type").to_pylist()))
 
     # Reward component data (from train split)
     component_data: dict[str, list[float]] = {}
@@ -318,9 +319,7 @@ def main() -> None:
         train_table = splits["train"]
         reward_cols = [c for c in train_table.schema.names if c.startswith("reward_r")]
         for col in reward_cols:
-            component_data[col.replace("reward_", "")] = (
-                train_table.column(col).to_pylist()
-            )
+            component_data[col.replace("reward_", "")] = train_table.column(col).to_pylist()
 
     # Episode lengths from JSONL files
     ep_lengths: list[int] = []
@@ -335,9 +334,7 @@ def main() -> None:
             # Aggregate rewards from annotations if available
             annotations = ep.get("_reward_annotations", {})
             if annotations:
-                ep_total = sum(
-                    v.get("total", 0.0) for v in annotations.values()
-                )
+                ep_total = sum(v.get("total", 0.0) for v in annotations.values())
                 scenario_rewards.setdefault(scenario, []).append(ep_total)
 
     # Generate plots

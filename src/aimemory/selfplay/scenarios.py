@@ -23,7 +23,7 @@ KOREAN_ONLY_RULE = (
     "2. 영어 문장을 쓰지 마세요. 중국어 문장을 쓰지 마세요. 일본어 문장을 쓰지 마세요.\n"
     "3. 코드 블록(```)을 절대 작성하지 마세요.\n"
     "4. 프로그래밍 코드를 직접 쓰지 마세요.\n"
-    "5. 기술 용어는 짧게만 쓰세요 (예: 'Python', 'API' 정도). 나머지는 한국어로 풀어서 설명하세요.\n"
+    "5. 기술 용어는 짧게만 쓰세요 (예: 'Python', 'API' 정도). 나머지는 한국어로 풀어서 설명하세요.\n"  # noqa: E501
     "6. 이 규칙을 어기면 대화가 실패합니다. 반드시 지켜주세요.\n\n"
 )
 
@@ -187,11 +187,11 @@ class ScenarioManager:
         """Return a system prompt with Korean enforcement + scenario/topic hint."""
         base_hints: dict[ScenarioType, str] = {
             ScenarioType.CASUAL_CHAT: "가벼운 일상 대화를 합니다.",
-            ScenarioType.TECHNICAL_QA: "기술 관련 경험을 한국어로만 이야기합니다. 코드를 쓰지 마세요.",
-            ScenarioType.PROJECT_DISCUSSION: "프로젝트 관련 이야기를 한국어로만 합니다. 코드를 쓰지 마세요.",
+            ScenarioType.TECHNICAL_QA: "기술 관련 경험을 한국어로만 이야기합니다. 코드를 쓰지 마세요.",  # noqa: E501
+            ScenarioType.PROJECT_DISCUSSION: "프로젝트 관련 이야기를 한국어로만 합니다. 코드를 쓰지 마세요.",  # noqa: E501
             ScenarioType.PERSONAL_PREFERENCES: "자신의 취향과 선호를 이야기합니다.",
-            ScenarioType.LEARNING_TUTORING: "배움과 학습 경험에 대해 한국어로만 이야기합니다.",
-            ScenarioType.TROUBLESHOOTING: "문제 해결 경험을 한국어로만 이야기합니다. 코드를 쓰지 마세요.",
+            ScenarioType.LEARNING_TUTORING: "배움과 학습 경험에 대해 한국어로만 이야기합니다.",  # noqa: E501
+            ScenarioType.TROUBLESHOOTING: "문제 해결 경험을 한국어로만 이야기합니다. 코드를 쓰지 마세요.",  # noqa: E501
         }
 
         hint = base_hints.get(scenario, "자연스럽게 대화하세요.")

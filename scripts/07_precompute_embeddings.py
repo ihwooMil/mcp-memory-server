@@ -99,9 +99,7 @@ _PERSONAL_INFO_PATTERNS = [
 _PREFERENCE_PATTERNS = [
     re.compile(r"\uc88b\uc544(?:\ud574\uc694|\ud569\ub2c8\ub2e4|\ud558\ub294|\ud568)"),
     re.compile(r"\uc2eb\uc5b4(?:\ud574\uc694|\ud569\ub2c8\ub2e4|\ud558\ub294|\ud568)"),
-    re.compile(
-        r"\uc120\ud638(?:\ud574\uc694|\ud569\ub2c8\ub2e4|\ud558\ub294|\ud568|\ud558\ub2e4)"
-    ),
+    re.compile(r"\uc120\ud638(?:\ud574\uc694|\ud569\ub2c8\ub2e4|\ud558\ub294|\ud568|\ud558\ub2e4)"),
     re.compile(r"\ucde8\ubbf8(?:\uac00|\ub294|\ub85c)?"),
     re.compile(r"\uc8fc\ub85c\s+\S+"),
     re.compile(r"\uc990\uaca8\s*\S+"),
@@ -136,12 +134,8 @@ def compute_hand_features(row: pd.Series) -> np.ndarray:
     keyword_count = len(tech_matches) + len(quoted_matches)
 
     is_question = 1.0 if _QUESTION_PATTERN.search(text) else 0.0
-    has_personal = (
-        1.0 if any(p.search(text) for p in _PERSONAL_INFO_PATTERNS) else 0.0
-    )
-    has_preference = (
-        1.0 if any(p.search(text) for p in _PREFERENCE_PATTERNS) else 0.0
-    )
+    has_personal = 1.0 if any(p.search(text) for p in _PERSONAL_INFO_PATTERNS) else 0.0
+    has_preference = 1.0 if any(p.search(text) for p in _PREFERENCE_PATTERNS) else 0.0
     has_tech = 1.0 if _TECH_KEYWORDS.search(text) else 0.0
     has_emotion = 1.0 if _EMOTION_KEYWORDS.search(text) else 0.0
 
@@ -185,12 +179,8 @@ def compute_next_hand_features(row: pd.Series) -> np.ndarray:
     keyword_count = len(tech_matches) + len(quoted_matches)
 
     is_question = 1.0 if _QUESTION_PATTERN.search(text) else 0.0
-    has_personal = (
-        1.0 if any(p.search(text) for p in _PERSONAL_INFO_PATTERNS) else 0.0
-    )
-    has_preference = (
-        1.0 if any(p.search(text) for p in _PREFERENCE_PATTERNS) else 0.0
-    )
+    has_personal = 1.0 if any(p.search(text) for p in _PERSONAL_INFO_PATTERNS) else 0.0
+    has_preference = 1.0 if any(p.search(text) for p in _PREFERENCE_PATTERNS) else 0.0
     has_tech = 1.0 if _TECH_KEYWORDS.search(text) else 0.0
     has_emotion = 1.0 if _EMOTION_KEYWORDS.search(text) else 0.0
 
@@ -267,15 +257,9 @@ def process_split(
         chunk_df = df.iloc[start:end]
 
         # Extract texts
-        turn_texts = [
-            extract_turn_text(r) for r in chunk_df["state_recent_turns_json"]
-        ]
-        mem_texts = [
-            extract_memory_text(r) for r in chunk_df["state_memory_summary_json"]
-        ]
-        next_pairs = [
-            extract_next_state_texts(r) for r in chunk_df["next_state_json"]
-        ]
+        turn_texts = [extract_turn_text(r) for r in chunk_df["state_recent_turns_json"]]
+        mem_texts = [extract_memory_text(r) for r in chunk_df["state_memory_summary_json"]]
+        next_pairs = [extract_next_state_texts(r) for r in chunk_df["next_state_json"]]
         next_turn_texts = [p[0] for p in next_pairs]
         next_mem_texts = [p[1] for p in next_pairs]
 
@@ -322,9 +306,7 @@ def process_split(
         next_hand_features.flush()
 
         # Save checkpoint
-        checkpoint_path.write_text(
-            json.dumps({"completed_chunks": chunk_idx + 1, "total_rows": n})
-        )
+        checkpoint_path.write_text(json.dumps({"completed_chunks": chunk_idx + 1, "total_rows": n}))
 
     # Remove checkpoint on completion
     if checkpoint_path.exists():
@@ -336,11 +318,15 @@ def process_split(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Pre-compute embeddings for DQN training")
     parser.add_argument(
-        "--splits-dir", type=Path, default=Path("data/splits"),
+        "--splits-dir",
+        type=Path,
+        default=Path("data/splits"),
         help="Directory containing {train,val,test}.parquet",
     )
     parser.add_argument(
-        "--output-dir", type=Path, default=Path("data/embeddings"),
+        "--output-dir",
+        type=Path,
+        default=Path("data/embeddings"),
         help="Output directory for numpy arrays",
     )
     parser.add_argument("--batch-size", type=int, default=256)

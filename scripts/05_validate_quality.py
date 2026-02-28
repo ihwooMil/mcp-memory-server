@@ -28,6 +28,10 @@ import json
 import logging
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
@@ -83,9 +87,7 @@ class QualityChecker:
             ids_per_split: dict[str, set[str]] = {}
             for name, table in splits.items():
                 if "episode_id" in table.schema.names:
-                    ids_per_split[name] = set(
-                        table.column("episode_id").to_pylist()
-                    )
+                    ids_per_split[name] = set(table.column("episode_id").to_pylist())
 
             split_names = list(ids_per_split.keys())
             leakage_found = False
@@ -117,12 +119,11 @@ class QualityChecker:
 
             rewards = table.column("reward_total").to_pylist()
             if not rewards:
-                self._record(
-                    f"reward_distribution_{split_name}", False, "No reward data"
-                )
+                self._record(f"reward_distribution_{split_name}", False, "No reward data")
                 return
 
             import statistics
+
             mean_r = statistics.mean(rewards)
             std_r = statistics.stdev(rewards) if len(rewards) > 1 else 0.0
             has_spread = std_r > 0.01
@@ -144,6 +145,7 @@ class QualityChecker:
                 return
 
             from collections import Counter
+
             actions = table.column("action_type").to_pylist()
             counts = Counter(actions)
             total = len(actions) or 1
@@ -202,9 +204,7 @@ class QualityChecker:
             f"train({train}) >= val({val}) and test({test})",
         )
 
-    def check_json_columns_parseable(
-        self, table: "pa.Table", split_name: str
-    ) -> None:
+    def check_json_columns_parseable(self, table: "pa.Table", split_name: str) -> None:
         """Check that JSON string columns are valid JSON."""
         json_cols = [
             "state_recent_turns_json",

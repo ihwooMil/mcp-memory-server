@@ -117,9 +117,7 @@ class MemoryConsolidator:
 
         # Choose longer content
         merged_content = (
-            keeper.content
-            if len(keeper.content) >= len(absorbed.content)
-            else absorbed.content
+            keeper.content if len(keeper.content) >= len(absorbed.content) else absorbed.content
         )
 
         # Union keywords
@@ -127,10 +125,11 @@ class MemoryConsolidator:
 
         # Union related_ids (exclude both self-references)
         excluded = {keeper.memory_id, absorbed.memory_id}
-        merged_related = list(dict.fromkeys(
-            rid for rid in keeper.related_ids + absorbed.related_ids
-            if rid not in excluded
-        ))
+        merged_related = list(
+            dict.fromkeys(
+                rid for rid in keeper.related_ids + absorbed.related_ids if rid not in excluded
+            )
+        )
 
         # Update keeper with merged data
         self.store.update_memory(
@@ -140,9 +139,7 @@ class MemoryConsolidator:
         )
 
         # Update access_count and related_ids in metadata
-        existing = self.store._collection.get(
-            ids=[keeper.memory_id], include=["metadatas"]
-        )
+        existing = self.store._collection.get(ids=[keeper.memory_id], include=["metadatas"])
         if existing["ids"]:
             meta = existing["metadatas"][0]
             meta["access_count"] = keeper.access_count + absorbed.access_count

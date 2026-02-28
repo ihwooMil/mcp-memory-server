@@ -17,7 +17,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from aimemory.i18n import LanguagePatterns, get_patterns
+from aimemory.i18n import get_patterns
 from aimemory.schemas import (
     MemoryActionType,
     MemoryDecision,
@@ -246,10 +246,14 @@ class MemoryPolicyAgent:
     def _compute_importance(self, turn: Turn, features: np.ndarray) -> float:
         """Rule-based importance score [0.0, 1.0]."""
         score = 0.0
-        if features[4]:  score += 0.4   # has_personal_info
-        if features[5]:  score += 0.35  # has_preference
-        if features[6]:  score += 0.3   # has_tech
-        if features[7]:  score += 0.2   # has_emotion
+        if features[4]:
+            score += 0.4  # has_personal_info
+        if features[5]:
+            score += 0.35  # has_preference
+        if features[6]:
+            score += 0.3  # has_tech
+        if features[7]:
+            score += 0.2  # has_emotion
         score += min(features[2] * 0.15, 0.3)  # keyword density (log-scaled)
         return min(score, 1.0)
 
@@ -260,7 +264,9 @@ class MemoryPolicyAgent:
         has_memory = self._store.get_stats().get("total", 0) > 0
         return (is_question or has_discourse) and has_memory
 
-    def decide(self, turn: Turn, recent_turns: list[Turn], turn_position: float = 0.0) -> MemoryDecision:
+    def decide(
+        self, turn: Turn, recent_turns: list[Turn], turn_position: float = 0.0
+    ) -> MemoryDecision:
         """Decide memory action using rule-based scoring + MLP bandit fallback."""
         # Non-user turns are always skipped
         if turn.role != Role.USER:
@@ -315,16 +321,12 @@ class MemoryPolicyAgent:
         """Process user feedback and update policy."""
         from aimemory.reward.feedback_detector import FeedbackType
 
-        last_action = (
-            self._recent_actions[-1] if self._recent_actions else MemoryActionType.SKIP
-        )
+        last_action = self._recent_actions[-1] if self._recent_actions else MemoryActionType.SKIP
         signal = self._feedback.detect(user_turn, previous_turns, last_action)
 
         # Update policy if we have stored state
         if self._last_features is not None and self._last_action_id is not None:
-            self._policy.update(
-                self._last_features, self._last_action_id, signal.reward_value
-            )
+            self._policy.update(self._last_features, self._last_action_id, signal.reward_value)
 
         if (
             self._reranker is not None

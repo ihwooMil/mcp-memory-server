@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from aimemory.memory.composer import ComposedMemory, ContextComposer
 from aimemory.memory.graph_store import MemoryNode
 
@@ -67,10 +65,7 @@ class TestContextComposer:
 
     def test_respects_top_k(self) -> None:
         composer = ContextComposer(token_budget=10000, top_k=2)
-        nodes = [
-            _make_node(f"m{i}", similarity_score=0.9 - i * 0.1)
-            for i in range(5)
-        ]
+        nodes = [_make_node(f"m{i}", similarity_score=0.9 - i * 0.1) for i in range(5)]
         composed = composer.compose(nodes)
         assert len(composed) <= 2
 
