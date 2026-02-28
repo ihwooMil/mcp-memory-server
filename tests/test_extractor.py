@@ -485,7 +485,7 @@ class TestExtractorConfig:
         from aimemory.config import ExtractorConfig
 
         cfg = ExtractorConfig()
-        assert cfg.emb_dim == 768
+        assert cfg.emb_dim == 384
         assert cfg.proj_dim == 128
         assert cfg.hand_dim == 10
         assert cfg.trunk_dim == 128
@@ -502,4 +502,4 @@ class TestExtractorConfig:
 
         cfg = AppConfig()
         assert hasattr(cfg, "extractor")
-        assert cfg.extractor.emb_dim == 768
+        assert cfg.extractor.emb_dim == 384

@@ -8,6 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+ollama = pytest.importorskip("ollama", reason="ollama not installed (install with: uv sync --extra train)")
+
 from aimemory.config import AppConfig, OllamaConfig, SelfPlayConfig
 from aimemory.schemas import (
     Episode,

@@ -11,6 +11,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from aimemory.i18n import get_patterns
+
 
 @dataclass
 class MultiResolutionText:
@@ -21,17 +23,13 @@ class MultiResolutionText:
     level2: str  # entity triple
 
 
-def generate_level1(text: str, keywords: list[str] | None = None) -> str:
-    """Generate Level 1 summary: keyword-containing sentences (max 100 chars).
-
-    Extracts sentences that contain any of the given keywords.
-    Falls back to first sentence if no keyword match.
-    """
+def generate_level1(text: str, keywords: list[str] | None = None, lang: str = "ko") -> str:
+    """Generate Level 1 summary: keyword-containing sentences (max 100 chars)."""
     if not text.strip():
         return ""
 
     keywords = keywords or []
-    # Split into sentences (Korean-aware)
+    # Split into sentences
     sentences = re.split(r"(?<=[.!?。])\s*", text.strip())
     sentences = [s.strip() for s in sentences if s.strip()]
 
@@ -62,31 +60,23 @@ def generate_level1(text: str, keywords: list[str] | None = None) -> str:
     return result[:100]
 
 
-def generate_level2(text: str, keywords: list[str] | None = None) -> str:
+def generate_level2(text: str, keywords: list[str] | None = None, lang: str = "ko") -> str:
     """Generate Level 2 entity triple: (subject, predicate, object).
 
-    Uses heuristic extraction for Korean text.
     Returns format: "subject,predicate,object"
     """
     if not text.strip():
         return ""
 
     keywords = keywords or []
+    lp = get_patterns(lang)
 
-    # Try to extract subject from keywords or text patterns
     subject = ""
     predicate = ""
     obj = ""
 
-    # Korean subject markers
-    subj_patterns = [
-        r"([\w]+(?:는|은|이|가))",  # noun+subject marker
-    ]
-
-    # Korean predicate patterns (verb/adjective endings)
-    pred_patterns = [
-        r"([\w]+(?:를|을|에서|에|으로|로|와|과|하고))\s*([\w]+(?:합니다|해요|했어요|입니다|이에요|예요|좋아|싫어|있어|없어|먹어|마셔))",
-    ]
+    subj_patterns = [lp.subject_markers]
+    pred_patterns = [lp.predicate_patterns]
 
     # Try keyword-based extraction first
     if keywords:
@@ -106,50 +96,45 @@ def generate_level2(text: str, keywords: list[str] | None = None) -> str:
         match = re.search(pattern, text)
         if match:
             obj = obj or match.group(1)
-            predicate = predicate or match.group(2)
+            if match.lastindex and match.lastindex >= 2:
+                predicate = predicate or match.group(2)
             break
 
-    # Fallback: simple split-based extraction
-    if not predicate:
-        # Try to find a verb ending
-        verb_match = re.search(
-            r"([\w]+(?:합니다|해요|했어요|입니다|이에요|예요|있어요|없어요|좋아해요|싫어해요|먹어요|마셔요|좋아합니다))",
-            text,
-        )
+    # Fallback: verb ending search
+    if not predicate and lp.verb_endings:
+        verb_match = re.search(lp.verb_endings, text)
         if verb_match:
             predicate = verb_match.group(1)
 
     if not subject:
         subject = keywords[0] if keywords else text.split()[0] if text.split() else ""
     if not predicate:
-        # Last resort: take main verb concept
         words = text.split()
         predicate = words[-1] if words else ""
     if not obj:
         obj = keywords[1] if len(keywords) > 1 else ""
 
     # Clean markers from subject
-    subject = re.sub(r"(는|은|이|가)$", "", subject)
+    if lp.subject_strip:
+        subject = re.sub(lp.subject_strip, "", subject)
 
     return f"{subject},{predicate},{obj}"
 
 
 def generate_all_levels(
-    text: str, keywords: list[str] | None = None
+    text: str, keywords: list[str] | None = None, lang: str = "ko",
 ) -> MultiResolutionText:
     """Generate all resolution levels for a text."""
     return MultiResolutionText(
         level0=text,
-        level1=generate_level1(text, keywords),
-        level2=generate_level2(text, keywords),
+        level1=generate_level1(text, keywords, lang=lang),
+        level2=generate_level2(text, keywords, lang=lang),
     )
 
 
-def estimate_tokens(text: str) -> int:
-    """Estimate token count for Korean text.
-
-    Uses len/2.5 approximation for Korean characters.
-    """
+def estimate_tokens(text: str, lang: str = "ko") -> int:
+    """Estimate token count for text based on language."""
     if not text:
         return 0
-    return max(1, int(len(text) / 2.5))
+    lp = get_patterns(lang)
+    return max(1, int(len(text) / lp.chars_per_token))

@@ -11,7 +11,10 @@ import uuid
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from aimemory.memory.knowledge_graph import KnowledgeGraph
 
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
@@ -24,8 +27,8 @@ VALID_CATEGORIES = {"fact", "preference", "experience", "emotion", "technical", 
 class ImmutableMemoryError(Exception):
     """Raised when attempting to modify or delete an immutable memory node."""
 
-# Default Korean-optimized embedding model
-DEFAULT_MODEL = "jhgan/ko-sroberta-multitask"
+# Multilingual embedding model
+DEFAULT_MODEL = "intfloat/multilingual-e5-small"
 
 
 @dataclass
@@ -62,6 +65,7 @@ class GraphMemoryStore:
         persist_directory: str = "./memory_db",
         collection_name: str = "memories",
         embedding_model: str = DEFAULT_MODEL,
+        knowledge_graph: KnowledgeGraph | None = None,
     ) -> None:
         self._embedding_fn = SentenceTransformerEmbeddingFunction(
             model_name=embedding_model,
@@ -72,6 +76,11 @@ class GraphMemoryStore:
             embedding_function=self._embedding_fn,
             metadata={"hnsw:space": "cosine"},
         )
+        self._knowledge_graph = knowledge_graph
+
+        # Rebuild KG from existing data if provided
+        if self._knowledge_graph is not None:
+            self._knowledge_graph.rebuild_from_store(self)
 
     # ── Write operations ──────────────────────────────────────────
 
@@ -131,6 +140,11 @@ class GraphMemoryStore:
         # Establish bidirectional edges: update related nodes to include this node
         for rid in related_ids:
             self._add_edge(rid, memory_id)
+
+        # Auto-add to KnowledgeGraph if attached
+        if self._knowledge_graph is not None and level2_text:
+            node = _meta_to_node(memory_id, content, metadata)
+            self._knowledge_graph.add_from_memory(node)
 
         return memory_id
 
@@ -201,6 +215,11 @@ class GraphMemoryStore:
                 self._remove_edge(nid, memory_id)
 
         self._collection.delete(ids=[memory_id])
+
+        # Remove from KnowledgeGraph if attached
+        if self._knowledge_graph is not None:
+            self._knowledge_graph.remove_triples_by_memory(memory_id)
+
         return True
 
     # ── Read operations ───────────────────────────────────────────

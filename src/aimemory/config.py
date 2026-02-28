@@ -117,8 +117,16 @@ class OnlinePolicyConfig(BaseModel):
     # Retrieval
     retrieve_top_k: int = 3
 
+    # Enhanced policy (opt-in)
+    use_enhanced_policy: bool = False
+    use_progressive_autonomy: bool = False
+    autonomy_confidence_threshold: int = 50
+
     # Sentence-transformer model (GraphMemoryStore)
-    st_model: str = "jhgan/ko-sroberta-multitask"
+    st_model: str = "intfloat/multilingual-e5-small"
+
+    # Language
+    language: str = "ko"
 
 
 class DataPaths(BaseModel):
@@ -142,6 +150,9 @@ class SecurityConfig(BaseModel):
     block_api_keys: bool = True
     block_medical_info: bool = True
     require_source_turn_id: bool = False
+    respect_life_dignity: bool = True
+    no_harm_to_humans: bool = True
+    recognize_creator: bool = True
 
 
 class ForgettingConfig(BaseModel):
@@ -154,6 +165,24 @@ class ForgettingConfig(BaseModel):
     related_boost: float = 0.1
 
 
+class SleepCycleConfig(BaseModel):
+    """Sleep cycle (periodic maintenance) configuration."""
+
+    enable_consolidation: bool = True
+    enable_resolution_regen: bool = True
+    enable_forgetting: bool = True
+    enable_checkpoint: bool = True
+    consolidation_threshold: float = 0.92
+    max_consolidation_pairs: int = 50
+    forgetting_decay_lambda: float = 0.05
+    forgetting_threshold_compress: float = 0.3
+    forgetting_threshold_deactivate: float = 0.1
+    forgetting_deactivation_days: int = 30
+    forgetting_related_boost: float = 0.1
+    checkpoint_dir: str = "checkpoints/sleep_cycle"
+    report_dir: str = "data/reports/sleep_cycle"
+
+
 class ComposerConfig(BaseModel):
     """Context composer configuration."""
 
@@ -162,6 +191,76 @@ class ComposerConfig(BaseModel):
     level0_avg_tokens: int = 60
     level1_avg_tokens: int = 25
     level2_avg_tokens: int = 10
+
+
+class GossipConfig(BaseModel):
+    """P2P gossip protocol configuration."""
+
+    max_norm: float = 1.0
+    gossip_interval: int = 50
+    dp_epsilon: float = 1.0
+    dp_delta: float = 1e-5
+    dp_enabled: bool = True
+    transport_host: str = "0.0.0.0"
+    transport_port: int = 9400
+    rule_hash_verify: bool = True
+
+
+class ExtractorConfig(BaseModel):
+    """RL feature extractor (DualHeadDQN) configuration."""
+
+    emb_dim: int = 384
+    proj_dim: int = 128
+    hand_dim: int = 10
+    trunk_dim: int = 128
+    n_actions: int = 3
+    feature_dim: int = 64
+    dropout: float = 0.1
+    batch_size: int = 512
+    lr: float = 3e-4
+    gamma: float = 0.99
+    class_weights: dict[int, float] = Field(default_factory=lambda: {0: 1.0, 1: 0.7, 2: 3.0})
+
+
+class ReRankerConfig(BaseModel):
+    """RL Re-ranker configuration."""
+
+    # Feature extraction
+    feature_dim: int = 11      # 8 → 11 (기존 8 + graph 3)
+    use_graph_features: bool = False  # True면 KG 피처 활성화
+
+    # Model
+    hidden_dim: int = 32
+    lr: float = 0.005
+    epsilon: float = 0.15
+
+    # Re-ranking
+    candidate_k: int = 10      # ChromaDB에서 가져올 후보 수
+    select_k: int = 3          # 리랭킹 후 선택할 수
+
+    # Latency budget
+    max_latency_ms: float = 20.0  # 최대 허용 리랭킹 지연 시간 (ms)
+
+    # Enable/disable
+    enabled: bool = True       # False이면 ChromaDB 순서를 그대로 사용
+
+
+class MCPServerConfig(BaseModel):
+    """MCP server configuration."""
+
+    persist_directory: str = "./memory_db"
+    collection_name: str = "memories"
+    embedding_model: str = "intfloat/multilingual-e5-small"
+    token_budget: int = 1024
+    top_k: int = 5
+    reranker_pool_size: int = 20
+    min_relevance: float = 0.6
+    policy_checkpoint: str | None = None
+    log_level: str = "INFO"
+
+    # Enhanced policy / GraphRAG (opt-in)
+    use_enhanced_policy: bool = False
+    use_graph_rag: bool = False
 
 
 class AppConfig(BaseModel):
@@ -176,4 +275,9 @@ class AppConfig(BaseModel):
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     forgetting: ForgettingConfig = Field(default_factory=ForgettingConfig)
     composer: ComposerConfig = Field(default_factory=ComposerConfig)
+    sleep_cycle: SleepCycleConfig = Field(default_factory=SleepCycleConfig)
+    gossip: GossipConfig = Field(default_factory=GossipConfig)
+    reranker: ReRankerConfig = Field(default_factory=ReRankerConfig)
+    extractor: ExtractorConfig = Field(default_factory=ExtractorConfig)
+    mcp: MCPServerConfig = Field(default_factory=MCPServerConfig)
     num_episodes: int = 1000

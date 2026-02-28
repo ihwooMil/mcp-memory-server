@@ -749,7 +749,7 @@ class TestR6GraduatedScoring:
     def test_r6_graduated_scoring(self):
         """R6 returns different scores based on keyword count."""
         # Text with first-person + utterance pattern + many keywords → 1.0
-        rich_text = "저는 Python, Rust, Go, Java를 사용하는 소프트웨어 엔지니어예요."
+        rich_text = "저는 Python, Rust, Go, Java를 좋아해요."
         # Text with first-person + utterance pattern + few keywords → 0.3 or 0.7
         sparse_text = "저는 좋아해요."
         rich_score = compute_r6_self_reference(rich_text)
