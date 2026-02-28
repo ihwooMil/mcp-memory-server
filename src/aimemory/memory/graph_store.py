@@ -230,11 +230,15 @@ class GraphMemoryStore:
         top_k: int = 5,
         category_filter: str | None = None,
         include_inactive: bool = False,
+        track_access: bool = True,
     ) -> list[MemoryNode]:
         """Semantic search for memories similar to query_text.
 
         Args:
             include_inactive: If False (default), only returns active memories.
+            track_access: If True (default), increments access_count for each
+                result.  Set to False for auto_search to prevent the
+                popularity feedback loop.
         """
         where_conditions: list[dict] = []
         if not include_inactive:
@@ -270,10 +274,11 @@ class GraphMemoryStore:
             similarity = 1.0 - (dist / 2.0)
             nodes.append(_meta_to_node(mid, doc, meta, similarity))
 
-            # Auto-increment access_count
-            current_count = int(meta.get("access_count", 0))
-            meta["access_count"] = current_count + 1
-            self._collection.update(ids=[mid], metadatas=[meta])
+            # Auto-increment access_count only for explicit searches
+            if track_access:
+                current_count = int(meta.get("access_count", 0))
+                meta["access_count"] = current_count + 1
+                self._collection.update(ids=[mid], metadatas=[meta])
 
         return nodes
 

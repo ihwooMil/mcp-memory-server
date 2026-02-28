@@ -1,7 +1,7 @@
 """Context composer: selects optimal resolution level per memory within a token budget.
 
-Uses a greedy algorithm to pack the most relevant memories into a fixed
-token budget, choosing the highest resolution level that fits.
+Uses MMR (Maximal Marginal Relevance) to balance relevance and diversity,
+then greedily packs memories choosing the highest resolution level that fits.
 """
 
 from __future__ import annotations
@@ -23,48 +23,84 @@ class ComposedMemory:
     tokens: int
 
 
+def _keyword_similarity(a: MemoryNode, b: MemoryNode) -> float:
+    """Compute Jaccard similarity between two memories' keyword sets."""
+    kw_a = {k.lower() for k in a.keywords} if a.keywords else set()
+    kw_b = {k.lower() for k in b.keywords} if b.keywords else set()
+    if not kw_a and not kw_b:
+        # Fallback: category match
+        return 1.0 if a.category == b.category else 0.0
+    if not kw_a or not kw_b:
+        return 0.0
+    return len(kw_a & kw_b) / len(kw_a | kw_b)
+
+
 class ContextComposer:
     """Composes context from memories within a token budget.
 
-    Strategy:
-    1. Sort memories by relevance (similarity_score) descending
-    2. For each memory, try Level 0 first, then Level 1, then Level 2
-    3. Pick the highest resolution that fits within remaining budget
-    4. Stop when budget is exhausted or top_k memories are selected
+    Strategy (MMR):
+    1. Iteratively pick the memory that maximises:
+       MMR = λ * relevance - (1-λ) * max_sim(selected)
+    2. For each picked memory, try Level 0 first, then L1, then L2.
+    3. Stop when budget is exhausted or top_k memories are selected.
+
+    λ=1.0 behaves like pure relevance (greedy). λ=0.5 is maximum diversity.
+    Default λ=0.7 balances relevance with diversity.
     """
 
-    def __init__(self, token_budget: int = 1024, top_k: int = 10) -> None:
+    def __init__(
+        self, token_budget: int = 1024, top_k: int = 10, mmr_lambda: float = 0.7,
+    ) -> None:
         self.token_budget = token_budget
         self.top_k = top_k
+        self.mmr_lambda = mmr_lambda
 
     def compose(self, memories: list[MemoryNode]) -> list[ComposedMemory]:
-        """Select memories and resolution levels within the token budget.
-
-        Args:
-            memories: List of MemoryNode, typically from search results
-                     (should have similarity_score set).
-
-        Returns:
-            List of ComposedMemory in relevance order.
-        """
-        # Sort by relevance descending
-        sorted_memories = sorted(
-            memories,
-            key=lambda m: m.similarity_score if m.similarity_score is not None else 0.0,
-            reverse=True,
-        )
+        """Select memories with MMR diversity and resolution levels within the token budget."""
+        if not memories:
+            return []
 
         composed: list[ComposedMemory] = []
         remaining_budget = self.token_budget
 
-        for node in sorted_memories[: self.top_k]:
+        # Candidate pool (indices into memories list)
+        candidates = list(range(len(memories)))
+        selected_nodes: list[MemoryNode] = []
+
+        while candidates and len(composed) < self.top_k and remaining_budget > 0:
+            best_idx = -1
+            best_mmr = float("-inf")
+
+            for idx in candidates:
+                node = memories[idx]
+                relevance = node.similarity_score if node.similarity_score is not None else 0.0
+
+                # Max similarity to already-selected memories
+                if selected_nodes:
+                    max_sim = max(
+                        _keyword_similarity(node, sel) for sel in selected_nodes
+                    )
+                else:
+                    max_sim = 0.0
+
+                mmr = self.mmr_lambda * relevance - (1.0 - self.mmr_lambda) * max_sim
+
+                if mmr > best_mmr:
+                    best_mmr = mmr
+                    best_idx = idx
+
+            if best_idx < 0:
+                break
+
+            candidates.remove(best_idx)
+            node = memories[best_idx]
             relevance = node.similarity_score if node.similarity_score is not None else 0.0
 
             # Try levels from highest resolution (0) to lowest (2)
-            candidates = self._get_level_candidates(node)
+            level_candidates = self._get_level_candidates(node)
             selected = None
 
-            for level, text, tokens in candidates:
+            for level, text, tokens in level_candidates:
                 if tokens <= remaining_budget:
                     selected = ComposedMemory(
                         memory_id=node.memory_id,
@@ -77,10 +113,8 @@ class ContextComposer:
 
             if selected is not None:
                 composed.append(selected)
+                selected_nodes.append(node)
                 remaining_budget -= selected.tokens
-
-            if remaining_budget <= 0:
-                break
 
         return composed
 

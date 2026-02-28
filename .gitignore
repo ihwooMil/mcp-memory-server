@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environment
+.venv/
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AIMemory runtime data
+memory_db/
+checkpoints/
+
+# Data artifacts (keep raw source files, ignore generated)
+data/embeddings/
+data/plots/
+data/splits/
+
+# Claude Code
+.claude/plans/

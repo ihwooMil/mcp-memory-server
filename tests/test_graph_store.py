@@ -396,3 +396,41 @@ class TestE2EIntegration:
         # Include inactive finds it
         results = store.search("아침 운동", include_inactive=True)
         assert any(n.memory_id == mid for n in results)
+
+
+# ── KnowledgeGraph Integration ────────────────────────────────
+
+
+class TestKnowledgeGraphIntegration:
+    """KG auto-build integration tests."""
+
+    def test_add_memory_auto_builds_kg(self, tmp_db: str) -> None:
+        from aimemory.memory.knowledge_graph import KnowledgeGraph
+        kg = KnowledgeGraph()
+        store = GraphMemoryStore(persist_directory=tmp_db, knowledge_graph=kg)
+        store.add_memory(
+            content="저는 봉골레를 싫어해요",
+            keywords=["봉골레"],
+            level2_text="사용자,싫어함,봉골레",
+        )
+        assert kg.stats()["edges"] == 1
+        ids = kg.get_memory_ids_for_entity("사용자")
+        assert len(ids) == 1
+
+    def test_delete_memory_removes_kg_triples(self, tmp_db: str) -> None:
+        from aimemory.memory.knowledge_graph import KnowledgeGraph
+        kg = KnowledgeGraph()
+        store = GraphMemoryStore(persist_directory=tmp_db, knowledge_graph=kg)
+        mid = store.add_memory(
+            content="테스트 내용",
+            level2_text="A,관계,B",
+        )
+        assert kg.stats()["edges"] == 1
+        store.delete_memory(mid)
+        assert kg.stats()["edges"] == 0
+
+    def test_kg_none_no_error(self, tmp_db: str) -> None:
+        """Without KG, add/delete work normally (no error)."""
+        store = GraphMemoryStore(persist_directory=tmp_db)
+        mid = store.add_memory(content="일반 메모리", level2_text="A,B,C")
+        assert store.delete_memory(mid) is True

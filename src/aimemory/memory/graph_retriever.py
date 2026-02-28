@@ -39,10 +39,12 @@ class GraphRetriever:
         self._lp = get_patterns(lang)
         self._word_re = re.compile(self._lp.word_extraction_pattern)
 
-    def retrieve(self, query: str, top_k: int = 20, final_k: int = 5) -> list[MemoryNode]:
+    def retrieve(
+        self, query: str, top_k: int = 20, final_k: int = 5, track_access: bool = True,
+    ) -> list[MemoryNode]:
         """Hybrid retrieval combining vector and graph signals."""
         # 1. Vector search
-        vector_results = self._store.search(query, top_k=top_k)
+        vector_results = self._store.search(query, top_k=top_k, track_access=track_access)
 
         # Build score map: memory_id → score components
         score_map: dict[str, dict] = {}
