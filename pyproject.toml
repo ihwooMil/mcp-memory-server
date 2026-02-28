@@ -1,21 +1,22 @@
 [project]
-name = "aimemory"
-version = "0.1.0"
-description = "AI Memory System - Intelligent memory management MCP server"
+name = "mcp-memory-server"
+version = "0.2.0"
+description = "Intelligent memory MCP server for AI assistants — auto-save, semantic search, RL-powered retrieval, and knowledge graphs"
 requires-python = ">=3.11,<3.14"
 license = "MIT"
 authors = [
     { name = "ihwoo" },
 ]
-keywords = ["ai", "memory", "mcp", "llm", "chatbot"]
+keywords = ["ai", "memory", "mcp", "llm", "chatbot", "claude", "rag", "knowledge-graph", "reinforcement-learning"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 readme = "README.md"
 dependencies = [
@@ -24,6 +25,12 @@ dependencies = [
     "sentence-transformers>=3.0",
     "mcp[cli]>=1.2.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ihwooMil/mcp-memory-server"
+Repository = "https://github.com/ihwooMil/mcp-memory-server"
+Issues = "https://github.com/ihwooMil/mcp-memory-server/issues"
+Changelog = "https://github.com/ihwooMil/mcp-memory-server/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 ko = [
@@ -51,6 +58,23 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/aimemory"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "data/",
+    "dist/",
+    "scripts/",
+    "tests/",
+    "checkpoints/",
+    "memory_db/",
+    ".claude/",
+    ".github/",
+    "*.pyc",
+    "__pycache__/",
+    ".DS_Store",
+    "uv.lock",
+    "IMPLEMENTATION_PLAN.md",
+]
 
 [tool.ruff]
 line-length = 100

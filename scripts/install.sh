@@ -66,77 +66,77 @@ TOOLS_BLOCK_END="<!-- \/aimemory -->"
 TOOLS_CONTENT=$(cat <<'HEREDOC'
 ## AIMemory (MCP: aimemory)
 
-대화 중 사용자의 정보를 자동으로 기억하고 활용하는 시스템.
-행동 규칙은 `SOUL.md`에 명시되어 있으므로 반드시 참조할 것.
+A system that automatically remembers and utilises the user's information during conversation.
+Behavioural rules are defined in `SOUL.md` — always refer to them.
 
-### 피드백 반영
+### Feedback Handling
 
-사용자의 반응으로 기억 품질을 자동 학습한다. 너는 다음을 인식하고 자연스럽게 대응해라:
+Memory quality is automatically learned from user reactions. Read the intent behind the user's response — not specific keywords — and respond naturally:
 
-- **긍정 피드백** ("맞아", "잘 기억하네", "그랬지"): 해당 기억이 강화됨. 계속 활용해라.
-- **부정 피드백** ("아닌데", "그게 아니라", "내가 언제 그랬어"): 아래 **부정 피드백 판단 규칙**을 따라라.
-- **반복 질문 감지** ("이미 말했잖아", "아까도 말했는데"): 기억 실패다. 사과하고 `auto_search`로 다시 찾아라.
+- **Positive feedback** (agreement, confirmation, or pleasant surprise that you remembered): The memory is reinforced. Keep using it.
+- **Negative feedback** (denial, correction, or confusion about something you referenced): Follow the **Negative Feedback Rules** below.
+- **Repeated question detected** (frustration that you're asking something already answered): This is a memory failure. Apologise and call `auto_search` again.
 
-틀린 기억을 고집하지 마라. 사용자가 정정하면 바로 반영해라.
+Never insist on incorrect memories. If the user corrects you, apply the correction immediately.
 
-### 부정 피드백 판단 규칙
+### Negative Feedback Rules
 
-부정 피드백을 받으면 **기존 기억을 무조건 삭제하지 마라.** 먼저 다음을 구분해라:
+When you receive negative feedback, **do not blindly delete existing memories.** First distinguish:
 
-#### 1. 사실 기억 vs 네 추론을 구분해라
-- **사실 기억**: 사용자가 직접 말한 것을 그대로 기록한 기억 (예: "봉골레 파스타를 먹을 계획이다")
-- **네 추론**: 사용자의 말에서 네가 유추한 것 (예: "봉골레를 좋아한다" — 사용자가 좋아한다고 말한 적 없음)
+#### 1. Distinguish factual memory vs your inference
+- **Factual memory**: Something the user explicitly stated (e.g. "I'm planning to eat vongole pasta")
+- **Your inference**: Something you deduced from what the user said (e.g. "They like vongole" — the user never said they like it)
 
-사실 기억은 사용자가 명시적으로 "그런 적 없어", "내가 언제 그랬어"라고 해야만 삭제/수정해라.
+Only delete/modify factual memories when the user explicitly denies having said it.
 
-#### 2. 정정 대상이 기존 기억인지 확인해라
-- 부정 피드백이 **기존 기억 자체**를 부정 → `memory_update` 또는 `memory_delete`
-- 부정 피드백이 **새로운 정보**를 추가 → 기존 기억 유지 + `memory_save`로 새 기억 저장
+#### 2. Determine whether the correction targets an existing memory
+- Negative feedback **denies an existing memory itself** → `memory_update` or `memory_delete`
+- Negative feedback **adds new information** → Keep existing memory + `memory_save` the new info
 
-#### 3. 판단 예시
+#### 3. Examples
 
-**기존 기억을 삭제해야 하는 경우:**
+**When to delete an existing memory:**
 ```
-기억: "커피를 좋아한다"
-사용자: "아닌데, 나 커피 싫어해"
-→ "커피를 좋아한다"는 틀린 기억 → memory_delete → memory_save("커피를 싫어한다")
-```
-
-**기존 기억을 유지해야 하는 경우:**
-```
-기억: "봉골레 파스타를 먹을 계획이다"
-사용자: "아닌데 나 봉골레 싫어해"
-→ "먹을 계획"은 사용자가 직접 말한 사실 — 삭제 금지
-→ "봉골레를 싫어한다"는 새로운 취향 정보 — memory_save 추가
-→ 응답: "싫어하는데 먹어야 해? 누가 정한 거야?"
+Memory: "Likes coffee"
+User: "No, I hate coffee"
+→ "Likes coffee" is wrong → memory_delete → memory_save("Hates coffee")
 ```
 
-**기존 기억을 수정해야 하는 경우:**
+**When to keep an existing memory:**
 ```
-기억: "매일 아침 조깅을 한다"
-사용자: "요즘은 안 해"
-→ memory_update(content="예전에 아침 조깅을 했으나 요즘은 안 한다")
+Memory: "Planning to eat vongole pasta"
+User: "Actually, I hate vongole"
+→ "Planning to eat" is a fact the user stated — do not delete
+→ "Hates vongole" is new preference info — memory_save
+→ Response: "You hate it but you have to eat it? Who decided that?"
 ```
 
-### 예시
+**When to update an existing memory:**
+```
+Memory: "Jogs every morning"
+User: "I don't do that anymore"
+→ memory_update(content="Used to jog in the morning but stopped recently")
+```
 
-**자동 기억 활용:**
-사용자: "오늘 점심에 김치찌개 먹었어"
-→ `auto_search("오늘 점심에 김치찌개 먹었어")` → 이전에 "김치찌개를 좋아한다"는 기억 발견
-→ `memory_save(content="점심에 김치찌개를 먹었다", keywords=["김치찌개","점심"], category="experience")`
-→ 응답: "역시 김치찌개 좋아하더니 또 먹었구나~ 맛있었어?"
+### Examples
 
-**피드백 — 기억 자체가 틀린 경우:**
-사용자: "아닌데, 나 커피 싫어해"
-→ 기존 "커피를 좋아한다" 기억이 틀렸음을 인식
-→ `memory_delete(memory_id="...")` → `memory_save(content="커피를 싫어한다", category="preference")`
-→ 응답: "아 미안, 잘못 기억했네. 커피 싫어하는구나."
+**Automatic memory usage:**
+User: "I had kimchi stew for lunch today"
+→ `auto_search("I had kimchi stew for lunch today")` → finds previous memory: "Likes kimchi stew"
+→ `memory_save(content="Had kimchi stew for lunch", keywords=["kimchi stew","lunch"], category="experience")`
+→ Response: "Of course you did, you love kimchi stew~ Was it good?"
 
-**피드백 — 새로운 정보 추가인 경우:**
-사용자: "아닌데 나 봉골레 싫어해"
-→ 기존 "봉골레 파스타를 먹을 계획이다"는 사용자가 직접 말한 사실 → 유지
-→ `memory_save(content="봉골레를 싫어한다", keywords=["봉골레","싫어하는 음식"], category="preference")`
-→ 응답: "싫어하는데 먹어야 해? 누가 정한 거야?"
+**Feedback — memory itself is wrong:**
+User: "No, I hate coffee"
+→ Recognise that "Likes coffee" memory is incorrect
+→ `memory_delete(memory_id="...")` → `memory_save(content="Hates coffee", category="preference")`
+→ Response: "Ah sorry, my bad. So you don't like coffee."
+
+**Feedback — adding new information:**
+User: "Actually I hate vongole"
+→ "Planning to eat vongole pasta" is a fact the user stated → keep
+→ `memory_save(content="Hates vongole", keywords=["vongole","disliked food"], category="preference")`
+→ Response: "You hate it but you have to eat it? Who decided that?"
 
 <!-- /aimemory -->
 HEREDOC

@@ -1,112 +1,180 @@
 # AIMemory
 
-Intelligent memory management MCP server for AI assistants. Automatically stores, retrieves, and manages conversational memories using RL-based policies, knowledge graphs, and semantic search.
+**Intelligent memory for AI assistants that actually remembers.**
 
-## Features
+> Drop-in MCP server that gives Claude (and any MCP client) persistent, searchable, self-organizing memory — powered by semantic search, knowledge graphs, and reinforcement learning.
 
-- **Automatic memory management** — RL contextual bandit decides when to save, skip, or retrieve
-- **Semantic search** — ChromaDB + multilingual sentence-transformer embeddings
-- **Knowledge graph** — Entity-relation graph for hybrid retrieval
-- **Multi-resolution text** — Full text, summary, and entity triple compression levels
-- **Forgetting pipeline** — Decay-based memory aging with consolidation
-- **Multilingual** — Korean (ko) and English (en) pattern support via i18n module
-- **MCP server** — Drop-in integration with OpenClaw, Claude Desktop, and any MCP client
+[![CI](https://github.com/ihwooMil/mcp-memory-server/actions/workflows/ci.yml/badge.svg)](https://github.com/ihwooMil/mcp-memory-server/actions)
+[![PyPI](https://img.shields.io/pypi/v/mcp-memory-server)](https://pypi.org/project/mcp-memory-server/)
+[![Python](https://img.shields.io/pypi/pyversions/mcp-memory-server)](https://pypi.org/project/mcp-memory-server/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Installation
+---
 
-### Basic (English mode)
+## Why AIMemory?
 
-```bash
-uv sync
-```
+Current AI memory tools have two critical problems:
 
-### With Korean support (MeCab)
+| Problem | How AIMemory solves it |
+|---------|----------------------|
+| **Manual retrieval** — you must ask "do you remember X?" | `auto_search` runs every turn, injecting relevant memories automatically |
+| **Token waste** — entire memory dump inserted into context | Multi-resolution composer selects top-K memories within a token budget |
 
-```bash
-uv sync --extra ko
-```
+## Key Features
 
-### Development
+- **RL-powered policy** — Contextual bandit decides when to save, skip, or retrieve (not just keyword matching)
+- **Semantic search** — ChromaDB + multilingual sentence-transformer embeddings (`intfloat/multilingual-e5-small`)
+- **Knowledge graph** — Entity-relation graph (NetworkX) for multi-hop reasoning ("who likes what?")
+- **GraphRAG hybrid retrieval** — Vector similarity + graph traversal, fused and re-ranked by an RL re-ranker
+- **Multi-resolution text** — Full text → summary → entity triples, composed within token budget
+- **Forgetting pipeline** — Decay-based aging with consolidation, pinning, and immutable protection
+- **Sleep cycle** — Periodic maintenance: dedup, compress, forget, checkpoint
+- **Multilingual** — Korean and English pattern support out of the box
 
-```bash
-uv sync --extra dev --extra ko
-```
+---
 
-## Usage
+## Quick Start (2 minutes)
 
-### As MCP server
-
-```bash
-# Run directly
-uv run python -m aimemory.mcp
-
-# Or via entry point
-uv run aimemory-mcp
-```
-
-### OpenClaw integration
+### 1. Install
 
 ```bash
-bash scripts/install_openclaw.sh
+pip install mcp-memory-server
 ```
 
-### Claude Desktop
+Or with [uv](https://docs.astral.sh/uv/):
 
-Add to `claude_desktop_config.json`:
+```bash
+uv pip install mcp-memory-server
+```
+
+<details>
+<summary>Optional: Korean NLP support</summary>
+
+```bash
+pip install mcp-memory-server[ko]
+```
+</details>
+
+### 2. Connect to Claude Desktop
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "aimemory": {
+      "command": "aimemory-mcp"
+    }
+  }
+}
+```
+
+That's it. Claude now has persistent memory across all conversations.
+
+<details>
+<summary>Advanced: custom data path or uv project mode</summary>
 
 ```json
 {
   "mcpServers": {
     "aimemory": {
       "command": "uv",
-      "args": ["run", "--project", "/path/to/AIMemory", "python", "-m", "aimemory.mcp"],
+      "args": ["run", "--project", "/path/to/AIMemory", "aimemory-mcp"],
       "env": {
-        "AIMEMORY_DB_PATH": "/path/to/AIMemory/memory_db"
+        "AIMEMORY_DB_PATH": "/path/to/memory_db"
       }
     }
   }
 }
 ```
+</details>
 
-## Environment Variables
+### 3. Connect to Claude Code
+
+```bash
+claude mcp add aimemory -- aimemory-mcp
+```
+
+---
+
+## MCP Tools (12)
+
+| Tool | Description |
+|------|-------------|
+| `auto_search` | Auto-retrieve relevant memories at turn start (multi-resolution context) |
+| `memory_save` | Save a new memory with keywords, category, and relations |
+| `memory_search` | Semantic similarity search |
+| `memory_update` | Update content or keywords of an existing memory |
+| `memory_delete` | Delete a memory (respects immutability) |
+| `memory_get_related` | BFS graph traversal for related memories |
+| `memory_pin` / `memory_unpin` | Protect memories from forgetting |
+| `memory_stats` | Total count and category breakdown |
+| `sleep_cycle_run` | Trigger maintenance (consolidation + forgetting + checkpoint) |
+| `policy_status` | RL policy state (epsilon, action distribution, updates) |
+| `policy_decide` | Ask the RL policy for a SAVE/SKIP/RETRIEVE decision with reasoning |
+
+---
+
+## Configuration
+
+All settings via environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `AIMEMORY_DB_PATH` | `./memory_db` | ChromaDB persistence directory |
-| `AIMEMORY_LANGUAGE` | `ko` | Language for pattern matching (`ko` or `en`) |
+| `AIMEMORY_LANGUAGE` | `ko` | Language for pattern matching (`ko` / `en`) |
 | `AIMEMORY_EMBEDDING_MODEL` | `intfloat/multilingual-e5-small` | Sentence-transformer model |
 | `AIMEMORY_LOG_LEVEL` | `INFO` | Logging level |
+| `AIMEMORY_ENHANCED_POLICY` | `0` | Enable 778d enhanced RL policy (`1` to enable) |
+| `AIMEMORY_GRAPH_RAG` | `0` | Enable GraphRAG hybrid retrieval (`1` to enable) |
 
-## Development
-
-```bash
-# Run tests
-uv run pytest tests/ -q
-
-# Run i18n tests
-uv run pytest tests/test_i18n.py -v
-
-# Lint
-uv run ruff check src/ tests/
-
-# Format
-uv run ruff format src/ tests/
-```
+---
 
 ## Architecture
 
 ```
-src/aimemory/
-├── i18n/           # Multilingual patterns (ko, en)
-├── memory/         # Graph store, retriever, resolution, forgetting
-├── mcp/            # MCP server and bridge
-├── online/         # RL policy, encoder, reranker
-├── reward/         # Feedback detection, implicit rewards
-├── selfplay/       # Training data generation
-├── extractor/      # DualHeadDQN feature extractor
-└── dataset/        # Dataset building and splitting
+┌─────────────────────────────────────────────────┐
+│                   MCP Client                     │
+│          (Claude Desktop / Claude Code)          │
+└────────────────────┬────────────────────────────┘
+                     │ stdio (JSON-RPC)
+┌────────────────────▼────────────────────────────┐
+│              FastMCP Server (12 tools)           │
+├──────────────────────────────────────────────────┤
+│              MemoryBridge (orchestrator)          │
+├──────────┬──────────┬──────────┬─────────────────┤
+│ RL Policy│ Retrieval│ Storage  │ Maintenance      │
+│          │          │          │                  │
+│ Rule-    │ ChromaDB │ Graph    │ Sleep Cycle      │
+│ Based +  │ vector + │ Memory   │ (consolidation,  │
+│ MLP      │ Knowledge│ Store    │  forgetting,     │
+│ Bandit   │ Graph    │          │  checkpoints)    │
+│          │ (GraphRAG)│         │                  │
+│ Re-ranker│          │          │                  │
+│ (11d MLP)│          │          │                  │
+└──────────┴──────────┴──────────┴─────────────────┘
 ```
+
+---
+
+## Development
+
+```bash
+# Clone and install dev dependencies
+git clone https://github.com/ihwooMil/mcp-memory-server.git
+cd mcp-memory-server
+uv sync --extra dev
+
+# Run tests (611 tests)
+uv run pytest tests/ -q
+
+# Lint & format
+uv run ruff check src/ tests/
+uv run ruff format src/ tests/
+```
+
+---
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE) for details.

@@ -206,21 +206,6 @@ class GossipConfig(BaseModel):
     rule_hash_verify: bool = True
 
 
-class ExtractorConfig(BaseModel):
-    """RL feature extractor (DualHeadDQN) configuration."""
-
-    emb_dim: int = 384
-    proj_dim: int = 128
-    hand_dim: int = 10
-    trunk_dim: int = 128
-    n_actions: int = 3
-    feature_dim: int = 64
-    dropout: float = 0.1
-    batch_size: int = 512
-    lr: float = 3e-4
-    gamma: float = 0.99
-    class_weights: dict[int, float] = Field(default_factory=lambda: {0: 1.0, 1: 0.7, 2: 3.0})
-
 
 class ReRankerConfig(BaseModel):
     """RL Re-ranker configuration."""
@@ -278,6 +263,5 @@ class AppConfig(BaseModel):
     sleep_cycle: SleepCycleConfig = Field(default_factory=SleepCycleConfig)
     gossip: GossipConfig = Field(default_factory=GossipConfig)
     reranker: ReRankerConfig = Field(default_factory=ReRankerConfig)
-    extractor: ExtractorConfig = Field(default_factory=ExtractorConfig)
     mcp: MCPServerConfig = Field(default_factory=MCPServerConfig)
     num_episodes: int = 1000

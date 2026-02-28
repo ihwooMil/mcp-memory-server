@@ -14,52 +14,6 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "aimemory"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "chromadb" },
-    { name = "mcp", extra = ["cli"] },
-    { name = "pydantic" },
-    { name = "sentence-transformers" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "ruff" },
-]
-ko = [
-    { name = "mecab-ko-dic" },
-    { name = "mecab-python3" },
-]
-train = [
-    { name = "matplotlib" },
-    { name = "ollama" },
-    { name = "pandas" },
-    { name = "pyarrow" },
-    { name = "tqdm" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "chromadb", specifier = ">=0.5.0" },
-    { name = "matplotlib", marker = "extra == 'train'", specifier = ">=3.8" },
-    { name = "mcp", extras = ["cli"], specifier = ">=1.2.0" },
-    { name = "mecab-ko-dic", marker = "extra == 'ko'", specifier = ">=1.0.0" },
-    { name = "mecab-python3", marker = "extra == 'ko'", specifier = ">=1.0.9" },
-    { name = "ollama", marker = "extra == 'train'", specifier = ">=0.4.0" },
-    { name = "pandas", marker = "extra == 'train'", specifier = ">=2.0" },
-    { name = "pyarrow", marker = "extra == 'train'", specifier = ">=15.0" },
-    { name = "pydantic", specifier = ">=2.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5" },
-    { name = "sentence-transformers", specifier = ">=3.0" },
-    { name = "tqdm", marker = "extra == 'train'", specifier = ">=4.66" },
-]
-provides-extras = ["ko", "dev", "train"]
-
-[[package]]
 name = "annotated-doc"
 version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1056,6 +1010,52 @@ cli = [
     { name = "python-dotenv" },
     { name = "typer" },
 ]
+
+[[package]]
+name = "mcp-memory-server"
+version = "0.2.0"
+source = { editable = "." }
+dependencies = [
+    { name = "chromadb" },
+    { name = "mcp", extra = ["cli"] },
+    { name = "pydantic" },
+    { name = "sentence-transformers" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+]
+ko = [
+    { name = "mecab-ko-dic" },
+    { name = "mecab-python3" },
+]
+train = [
+    { name = "matplotlib" },
+    { name = "ollama" },
+    { name = "pandas" },
+    { name = "pyarrow" },
+    { name = "tqdm" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "chromadb", specifier = ">=0.5.0" },
+    { name = "matplotlib", marker = "extra == 'train'", specifier = ">=3.8" },
+    { name = "mcp", extras = ["cli"], specifier = ">=1.2.0" },
+    { name = "mecab-ko-dic", marker = "extra == 'ko'", specifier = ">=1.0.0" },
+    { name = "mecab-python3", marker = "extra == 'ko'", specifier = ">=1.0.9" },
+    { name = "ollama", marker = "extra == 'train'", specifier = ">=0.4.0" },
+    { name = "pandas", marker = "extra == 'train'", specifier = ">=2.0" },
+    { name = "pyarrow", marker = "extra == 'train'", specifier = ">=15.0" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5" },
+    { name = "sentence-transformers", specifier = ">=3.0" },
+    { name = "tqdm", marker = "extra == 'train'", specifier = ">=4.66" },
+]
+provides-extras = ["ko", "dev", "train"]
 
 [[package]]
 name = "mdurl"
