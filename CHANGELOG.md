@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-01
+
+### Changed
+
+- **Project renamed** from `mcp-memory-server` to `long-term-memory`. Python import name (`aimemory`) and CLI commands unchanged.
+- **GitHub repository** renamed to `long-term-memory` (old URL auto-redirects)
+
+### Added
+
+- **Auto-linking** — New memories automatically link to similar existing ones (similarity ≥ 0.92) via bidirectional graph edges
+- **Live graph visualization** (`aimemory-live`) — Real-time WebSocket-based memory graph in the browser
+  - Force-directed layout (vis.js ForceAtlas2) with category-based coloring
+  - Glow effects on save (green) and search (blue)
+  - Event log sidebar with hover-to-highlight related nodes
+  - Persistent event history across browser refreshes
+  - Cross-process event push (MCP → live server via WebSocket `/event` path)
+- **`memory_visualize` tool** — Generate interactive static HTML graph (13th MCP tool)
+- **`[live]` optional dependency** — `websockets>=12.0`
+
+### Deprecated
+
+- PyPI package `mcp-memory-server` — use `long-term-memory` instead
+
 ## [0.2.0] - 2026-02-28
 
 First public release.

@@ -1,22 +1,24 @@
-# AIMemory
+# Long-Term Memory
 
-**Intelligent memory for AI assistants that actually remembers.**
+**Persistent, self-organizing memory for AI assistants.**
 
-> Drop-in MCP server that gives Claude (and any MCP client) persistent, searchable, self-organizing memory — powered by semantic search, knowledge graphs, and reinforcement learning.
+> Drop-in MCP server that gives Claude (and any MCP client) long-term memory — powered by semantic search, knowledge graphs, and reinforcement learning.
 
-[![CI](https://github.com/ihwooMil/mcp-memory-server/actions/workflows/ci.yml/badge.svg)](https://github.com/ihwooMil/mcp-memory-server/actions)
-[![PyPI](https://img.shields.io/pypi/v/mcp-memory-server)](https://pypi.org/project/mcp-memory-server/)
-[![Python](https://img.shields.io/pypi/pyversions/mcp-memory-server)](https://pypi.org/project/mcp-memory-server/)
+[![CI](https://github.com/ihwooMil/long-term-memory/actions/workflows/ci.yml/badge.svg)](https://github.com/ihwooMil/long-term-memory/actions)
+[![PyPI](https://img.shields.io/pypi/v/long-term-memory)](https://pypi.org/project/long-term-memory/)
+[![Python](https://img.shields.io/pypi/pyversions/long-term-memory)](https://pypi.org/project/long-term-memory/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> **Note:** This package was previously published as [`mcp-memory-server`](https://pypi.org/project/mcp-memory-server/). That package is deprecated — please use `long-term-memory` going forward.
 
 ---
 
-## Why AIMemory?
+## Why Long-Term Memory?
 
 Current AI memory tools have two critical problems:
 
-| Problem | How AIMemory solves it |
-|---------|----------------------|
+| Problem | How we solve it |
+|---------|----------------|
 | **Manual retrieval** — you must ask "do you remember X?" | `auto_search` runs every turn, injecting relevant memories automatically |
 | **Token waste** — entire memory dump inserted into context | Multi-resolution composer selects top-K memories within a token budget |
 
@@ -24,11 +26,13 @@ Current AI memory tools have two critical problems:
 
 - **RL-powered policy** — Contextual bandit decides when to save, skip, or retrieve (not just keyword matching)
 - **Semantic search** — ChromaDB + multilingual sentence-transformer embeddings (`intfloat/multilingual-e5-small`)
-- **Knowledge graph** — Entity-relation graph (NetworkX) for multi-hop reasoning ("who likes what?")
+- **Knowledge graph** — Entity-relation graph (NetworkX) for multi-hop reasoning
 - **GraphRAG hybrid retrieval** — Vector similarity + graph traversal, fused and re-ranked by an RL re-ranker
+- **Auto-linking** — New memories automatically link to similar existing ones (similarity ≥ 0.92)
 - **Multi-resolution text** — Full text → summary → entity triples, composed within token budget
 - **Forgetting pipeline** — Decay-based aging with consolidation, pinning, and immutable protection
 - **Sleep cycle** — Periodic maintenance: dedup, compress, forget, checkpoint
+- **Live graph** — Real-time WebSocket visualization of the memory graph
 - **Multilingual** — Korean and English pattern support out of the box
 
 ---
@@ -38,20 +42,22 @@ Current AI memory tools have two critical problems:
 ### 1. Install
 
 ```bash
-pip install mcp-memory-server
+pip install long-term-memory
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv pip install mcp-memory-server
+uv pip install long-term-memory
 ```
 
 <details>
-<summary>Optional: Korean NLP support</summary>
+<summary>Optional extras</summary>
 
 ```bash
-pip install mcp-memory-server[ko]
+pip install long-term-memory[ko]     # Korean NLP support
+pip install long-term-memory[live]   # Real-time graph visualization
+pip install long-term-memory[viz]    # Static graph visualization
 ```
 </details>
 
@@ -78,6 +84,23 @@ Add to your `claude_desktop_config.json`:
 That's it. Claude now has persistent memory across all conversations.
 
 <details>
+<summary>With live graph visualization</summary>
+
+```json
+{
+  "mcpServers": {
+    "aimemory": {
+      "command": "aimemory-mcp",
+      "args": ["--with-live"]
+    }
+  }
+}
+```
+
+Then open `http://127.0.0.1:8765` to see the live memory graph.
+</details>
+
+<details>
 <summary>Advanced: custom data path or uv project mode</summary>
 
 ```json
@@ -85,7 +108,7 @@ That's it. Claude now has persistent memory across all conversations.
   "mcpServers": {
     "aimemory": {
       "command": "uv",
-      "args": ["run", "--project", "/path/to/AIMemory", "aimemory-mcp"],
+      "args": ["run", "--project", "/path/to/long-term-memory", "aimemory-mcp", "--with-live"],
       "env": {
         "AIMEMORY_DB_PATH": "/path/to/memory_db"
       }
@@ -101,9 +124,40 @@ That's it. Claude now has persistent memory across all conversations.
 claude mcp add aimemory -- aimemory-mcp
 ```
 
+Or with live graph:
+
+```bash
+claude mcp add aimemory -- aimemory-mcp --with-live
+```
+
 ---
 
-## MCP Tools (12)
+## Live Graph Visualization
+
+Real-time WebSocket-based memory graph that updates as memories are saved, searched, or deleted.
+
+```bash
+# Option 1: auto-start with MCP server
+aimemory-mcp --with-live
+
+# Option 2: standalone server
+aimemory-live --port 8765
+
+# Option 3: via environment variable
+AIMEMORY_LIVE=1 aimemory-mcp
+```
+
+Open `http://127.0.0.1:8765` in a browser. Requires the `[live]` extra (`pip install long-term-memory[live]`). Features:
+
+- Force-directed graph layout with category-based coloring
+- New nodes glow green on save, blue on search
+- Event log sidebar with hover-to-highlight (hover a log entry to highlight related nodes)
+- Persistent event history across browser refreshes
+- Cross-process events — MCP server pushes events to the live graph via WebSocket
+
+---
+
+## MCP Tools (13)
 
 | Tool | Description |
 |------|-------------|
@@ -115,6 +169,7 @@ claude mcp add aimemory -- aimemory-mcp
 | `memory_get_related` | BFS graph traversal for related memories |
 | `memory_pin` / `memory_unpin` | Protect memories from forgetting |
 | `memory_stats` | Total count and category breakdown |
+| `memory_visualize` | Generate interactive graph HTML |
 | `sleep_cycle_run` | Trigger maintenance (consolidation + forgetting + checkpoint) |
 | `policy_status` | RL policy state (epsilon, action distribution, updates) |
 | `policy_decide` | Ask the RL policy for a SAVE/SKIP/RETRIEVE decision with reasoning |
@@ -133,6 +188,8 @@ All settings via environment variables:
 | `AIMEMORY_LOG_LEVEL` | `INFO` | Logging level |
 | `AIMEMORY_ENHANCED_POLICY` | `0` | Enable 778d enhanced RL policy (`1` to enable) |
 | `AIMEMORY_GRAPH_RAG` | `0` | Enable GraphRAG hybrid retrieval (`1` to enable) |
+| `AIMEMORY_LIVE_HOST` | `127.0.0.1` | Live graph server host (for event push) |
+| `AIMEMORY_LIVE_PORT` | `8765` | Live graph server port (for event push) |
 
 ---
 
@@ -145,7 +202,7 @@ All settings via environment variables:
 └────────────────────┬────────────────────────────┘
                      │ stdio (JSON-RPC)
 ┌────────────────────▼────────────────────────────┐
-│              FastMCP Server (12 tools)           │
+│              FastMCP Server (13 tools)           │
 ├──────────────────────────────────────────────────┤
 │              MemoryBridge (orchestrator)          │
 ├──────────┬──────────┬──────────┬─────────────────┤
@@ -159,6 +216,11 @@ All settings via environment variables:
 │ Re-ranker│          │          │                  │
 │ (11d MLP)│          │          │                  │
 └──────────┴──────────┴──────────┴─────────────────┘
+         ↕ WebSocket (cross-process)
+┌──────────────────────────────────────────────────┐
+│          Live Graph Server (aimemory-live)        │
+│     vis.js force-directed graph + event log      │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
@@ -167,17 +229,28 @@ All settings via environment variables:
 
 ```bash
 # Clone and install dev dependencies
-git clone https://github.com/ihwooMil/mcp-memory-server.git
-cd mcp-memory-server
+git clone https://github.com/ihwooMil/long-term-memory.git
+cd long-term-memory
 uv sync --extra dev
 
-# Run tests (611 tests)
+# Run tests (611+ tests)
 uv run pytest tests/ -q
 
 # Lint & format
 uv run ruff check src/ tests/
 uv run ruff format src/ tests/
 ```
+
+---
+
+## Migrating from mcp-memory-server
+
+```bash
+pip uninstall mcp-memory-server
+pip install long-term-memory
+```
+
+No code changes needed — the Python import name (`aimemory`) and CLI commands (`aimemory-mcp`, `aimemory-viz`, `aimemory-live`) remain the same.
 
 ---
 

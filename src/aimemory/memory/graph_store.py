@@ -142,6 +142,9 @@ class GraphMemoryStore:
         for rid in related_ids:
             self._add_edge(rid, memory_id)
 
+        # Auto-link: find similar memories and create bidirectional edges
+        self._auto_link(memory_id, content)
+
         # Auto-add to KnowledgeGraph if attached
         if self._knowledge_graph is not None and level2_text:
             node = _meta_to_node(memory_id, content, metadata)
@@ -427,6 +430,28 @@ class GraphMemoryStore:
         return new_store
 
     # ── Private helpers ───────────────────────────────────────────
+
+    def _auto_link(
+        self,
+        memory_id: str,
+        content: str,
+        top_k: int = 5,
+        threshold: float = 0.92,
+    ) -> list[str]:
+        """Find similar memories and create bidirectional edges automatically.
+
+        Returns list of memory IDs that were auto-linked.
+        """
+        candidates = self.search(content, top_k=top_k, track_access=False)
+        linked: list[str] = []
+        for node in candidates:
+            if node.memory_id == memory_id:
+                continue
+            if node.similarity_score is not None and node.similarity_score >= threshold:
+                self._add_edge(memory_id, node.memory_id)
+                self._add_edge(node.memory_id, memory_id)
+                linked.append(node.memory_id)
+        return linked
 
     def _add_edge(self, target_id: str, new_related_id: str) -> None:
         """Add new_related_id to target_id's related_ids list."""

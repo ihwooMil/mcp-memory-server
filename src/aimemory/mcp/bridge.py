@@ -8,6 +8,7 @@ import os
 from typing import Any
 
 from aimemory.config import MCPServerConfig
+from aimemory.live_graph.notify import notify_live_graph
 from aimemory.memory.composer import ContextComposer
 from aimemory.memory.graph_store import GraphMemoryStore, ImmutableMemoryError, MemoryNode
 from aimemory.memory.sleep_cycle import SleepCycleRunner
@@ -223,12 +224,45 @@ class MemoryBridge:
             immutable=immutable,
             pinned=pinned,
         )
-        logger.info("Saved memory %s (category=%s)", memory_id, category)
+
+        # Fetch auto-linked related_ids from the stored memory
+        stored = self._store._collection.get(ids=[memory_id], include=["metadatas"])
+        auto_related: list[str] = []
+        if stored["ids"]:
+            from aimemory.memory.graph_store import _parse_csv
+
+            auto_related = _parse_csv(stored["metadatas"][0].get("related_ids", ""))
+
+        logger.info(
+            "Saved memory %s (category=%s, auto_linked=%d)",
+            memory_id, category, len(auto_related),
+        )
+
+        # Emit live graph event
+        from aimemory.visualize import CATEGORY_COLORS
+
+        notify_live_graph({
+            "type": "node_add",
+            "node": {
+                "id": memory_id,
+                "content": content,
+                "label": content[:30] + ("…" if len(content) > 30 else ""),
+                "category": category,
+                "color": CATEGORY_COLORS.get(category, "#999999"),
+                "keywords": keywords or [],
+                "access_count": 0,
+                "pinned": pinned,
+                "created_at": "",
+                "related_ids": auto_related,
+            },
+        })
+
         return {
             "memory_id": memory_id,
             "content": content,
             "keywords": keywords or [],
             "category": category,
+            "related_ids": auto_related,
         }
 
     def search_memory(
@@ -243,7 +277,20 @@ class MemoryBridge:
             top_k=top_k,
             category_filter=category,
         )
-        return [_node_to_dict(n) for n in nodes]
+        result = [_node_to_dict(n) for n in nodes]
+
+        # Emit live graph event
+        if result:
+            notify_live_graph({
+                "type": "search_highlight",
+                "query": query,
+                "results": [
+                    {"memory_id": r["memory_id"], "similarity": r.get("similarity")}
+                    for r in result
+                ],
+            })
+
+        return result
 
     def auto_search(
         self,
@@ -389,6 +436,7 @@ class MemoryBridge:
             if not success:
                 return {"success": False, "error": f"Memory not found: {memory_id}"}
             logger.info("Deleted memory %s", memory_id)
+            notify_live_graph({"type": "node_remove", "memory_id": memory_id})
             return {"success": True, "memory_id": memory_id}
         except ImmutableMemoryError as exc:
             return {"success": False, "error": str(exc)}

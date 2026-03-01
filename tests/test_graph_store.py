@@ -95,14 +95,19 @@ class TestGetRelated:
         assert any(n.memory_id == m1 for n in store.get_related(m2))
 
     def test_depth_two_traversal(self, store: GraphMemoryStore) -> None:
-        m1 = store.add_memory(content="루트 노드")
-        m2 = store.add_memory(content="중간 노드", related_ids=[m1])
-        m3 = store.add_memory(content="말단 노드", related_ids=[m2])
+        # Use very distinct content to avoid auto-linking
+        m1 = store.add_memory(content="Python is a programming language for software development.")
+        m2 = store.add_memory(content="I love eating pizza and pasta for dinner.", related_ids=[m1])
+        m3 = store.add_memory(
+            content="The weather forecast predicts heavy rain tomorrow.",
+            related_ids=[m2],
+        )
 
-        # depth=1: only m2
+        # depth=1 from m1: only m2 (explicit edge)
         depth1 = store.get_related(m1, depth=1)
-        assert len(depth1) == 1
-        assert depth1[0].memory_id == m2
+        depth1_ids = {n.memory_id for n in depth1}
+        assert m2 in depth1_ids
+        assert m3 not in depth1_ids
 
         # depth=2: m2 and m3
         depth2 = store.get_related(m1, depth=2)
@@ -388,6 +393,71 @@ class TestE2EIntegration:
         # Include inactive finds it
         results = store.search("아침 운동", include_inactive=True)
         assert any(n.memory_id == mid for n in results)
+
+
+# ── Auto-Link Related Memories ────────────────────────────────
+
+
+class TestAutoLink:
+    def test_auto_link_similar_memories(self, store: GraphMemoryStore) -> None:
+        """Two similar memories should be auto-linked bidirectionally."""
+        m1 = store.add_memory(
+            content="파이썬은 인터프리터 기반의 프로그래밍 언어입니다.",
+            keywords=["파이썬", "프로그래밍"],
+            category="technical",
+        )
+        m2 = store.add_memory(
+            content="파이썬 프로그래밍 언어는 배우기 쉽습니다.",
+            keywords=["파이썬", "프로그래밍"],
+            category="technical",
+        )
+        # m2 should have auto-linked to m1
+        related_from_m2 = store.get_related(m2, depth=1)
+        assert any(n.memory_id == m1 for n in related_from_m2)
+        # m1 should also link back to m2 (bidirectional)
+        related_from_m1 = store.get_related(m1, depth=1)
+        assert any(n.memory_id == m2 for n in related_from_m1)
+
+    def test_auto_link_unrelated_memories(self, store: GraphMemoryStore) -> None:
+        """Dissimilar memories should NOT be auto-linked (threshold=0.92)."""
+        m1 = store.add_memory(
+            content="Python is an interpreted programming language for software development.",
+            keywords=["python", "programming"],
+            category="technical",
+        )
+        m2 = store.add_memory(
+            content="I love eating pizza and pasta for dinner at Italian restaurants.",
+            keywords=["food", "dinner"],
+            category="experience",
+        )
+        # They should NOT be linked (similarity ~0.87, below 0.92 threshold)
+        related_from_m1 = store.get_related(m1, depth=1)
+        assert not any(n.memory_id == m2 for n in related_from_m1)
+        related_from_m2 = store.get_related(m2, depth=1)
+        assert not any(n.memory_id == m1 for n in related_from_m2)
+
+    def test_auto_link_preserves_explicit_related_ids(self, store: GraphMemoryStore) -> None:
+        """Explicit related_ids should be preserved alongside auto-links."""
+        m1 = store.add_memory(content="노드 A: 기계 학습 기초")
+        _m2 = store.add_memory(content="노드 B: 딥러닝 모델")
+        # m3 explicitly links to m1 and may auto-link to _m2
+        m3 = store.add_memory(
+            content="노드 C: 기계 학습과 딥러닝의 차이점",
+            related_ids=[m1],
+        )
+        related_from_m3 = store.get_related(m3, depth=1)
+        related_ids = {n.memory_id for n in related_from_m3}
+        # At minimum, the explicit link to m1 must be present
+        assert m1 in related_ids
+
+    def test_auto_link_does_not_link_self(self, store: GraphMemoryStore) -> None:
+        """A memory should never be linked to itself."""
+        mid = store.add_memory(
+            content="자기 참조 테스트 메모리",
+            keywords=["자기참조"],
+        )
+        related = store.get_related(mid, depth=1)
+        assert not any(n.memory_id == mid for n in related)
 
 
 # ── KnowledgeGraph Integration ────────────────────────────────

@@ -1,13 +1,13 @@
 [project]
-name = "mcp-memory-server"
-version = "0.2.1"
-description = "Intelligent memory MCP server for AI assistants — auto-save, semantic search, RL-powered retrieval, and knowledge graphs"
+name = "long-term-memory"
+version = "0.3.0"
+description = "Long-term memory system for AI assistants — persistent, searchable, self-organizing memory powered by semantic search, knowledge graphs, and reinforcement learning"
 requires-python = ">=3.11,<3.14"
 license = "MIT"
 authors = [
     { name = "ihwoo" },
 ]
-keywords = ["ai", "memory", "mcp", "llm", "chatbot", "claude", "rag", "knowledge-graph", "reinforcement-learning"]
+keywords = ["ai", "memory", "mcp", "llm", "long-term-memory", "claude", "rag", "knowledge-graph", "reinforcement-learning"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -27,10 +27,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ihwooMil/mcp-memory-server"
-Repository = "https://github.com/ihwooMil/mcp-memory-server"
-Issues = "https://github.com/ihwooMil/mcp-memory-server/issues"
-Changelog = "https://github.com/ihwooMil/mcp-memory-server/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/ihwooMil/long-term-memory"
+Repository = "https://github.com/ihwooMil/long-term-memory"
+Issues = "https://github.com/ihwooMil/long-term-memory/issues"
+Changelog = "https://github.com/ihwooMil/long-term-memory/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 ko = [
@@ -44,6 +44,9 @@ dev = [
 viz = [
     "pyvis>=0.3.2",
 ]
+live = [
+    "websockets>=12.0",
+]
 train = [
     "ollama>=0.4.0",
     "pandas>=2.0",
@@ -55,6 +58,7 @@ train = [
 [project.scripts]
 aimemory-mcp = "aimemory.mcp.server:main"
 aimemory-viz = "aimemory.visualize:main"
+aimemory-live = "aimemory.live_graph.server:main"
 
 [build-system]
 requires = ["hatchling"]

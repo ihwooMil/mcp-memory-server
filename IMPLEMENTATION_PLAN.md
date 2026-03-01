@@ -1,4 +1,4 @@
-# AI Memory System - 구현 계획서
+# Long-Term Memory System - 구현 계획서
 
 > **기반 문서**: ai_memory_system_design_v4.docx
 > **생성일**: 2026-02-25

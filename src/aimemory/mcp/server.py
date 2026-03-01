@@ -362,7 +362,7 @@ async def memory_visualize(
             "success": False,
             "error": (
                 "pyvis is required for visualization. "
-                "Install it with: pip install 'mcp-memory-server[viz]' "
+                "Install it with: pip install 'long-term-memory[viz]' "
                 "or: uv sync --extra viz"
             ),
         })
@@ -373,8 +373,41 @@ async def memory_visualize(
         )
 
 
+def _start_live_server(host: str = "127.0.0.1", port: int = 8765) -> None:
+    """Start the live graph server as a background subprocess."""
+    import subprocess
+
+    try:
+        cmd = [
+            sys.executable, "-m", "aimemory.live_graph.server",
+            "--host", host, "--port", str(port),
+        ]
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        logger.info("Live graph server started (pid=%d) at http://%s:%d", proc.pid, host, port)
+    except Exception as exc:
+        logger.warning("Failed to start live graph server: %s", exc)
+
+
 def main() -> None:
     """Entry point for the MCP server."""
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser(description="AIMemory MCP server")
+    parser.add_argument(
+        "--with-live", action="store_true",
+        help="Also start the live graph visualization server",
+    )
+    parser.add_argument("--live-port", type=int, default=8765)
+    parser.add_argument("--live-host", default="127.0.0.1")
+    args = parser.parse_args()
+
+    # Auto-detect: start live server if AIMEMORY_LIVE=1 or --with-live
+    if args.with_live or os.environ.get("AIMEMORY_LIVE") == "1":
+        _start_live_server(host=args.live_host, port=args.live_port)
+
     logger.info("Starting AIMemory MCP server (stdio transport)")
     mcp.run(transport="stdio")
 

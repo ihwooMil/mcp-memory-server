@@ -1,10 +1,10 @@
-# AIMemory Architecture
+# Long-Term Memory Architecture
 
-> mcp-memory-server 내부 구조와 설계 결정을 설명하는 기술 문서
+> long-term-memory 내부 구조와 설계 결정을 설명하는 기술 문서
 
 ## 시스템 개요
 
-AIMemory는 AI 어시스턴트에 **영구적이고 자기 관리되는 기억**을 부여하는 MCP 서버입니다.
+Long-Term Memory는 AI 어시스턴트에 **영구적이고 자기 관리되는 기억**을 부여하는 MCP 서버입니다.
 
 기존 `.md` 파일 기반 기억의 두 가지 한계를 해결합니다:
 

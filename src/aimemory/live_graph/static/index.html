@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Long-Term Memory — Live Graph</title>
+<script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+<link  href="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/styles/vis-network.min.css" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Menlo', 'Consolas', monospace;
+    background: #0f0f1a;
+    color: #c8c8d4;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Left: Graph canvas ─────────────────────────── */
+  #graph-container {
+    flex: 1;
+    position: relative;
+  }
+  #network { width:100%; height:100%; }
+
+  /* Status badge */
+  #status {
+    position: absolute; top:12px; left:12px;
+    padding: 4px 12px; border-radius: 12px;
+    font-size: 11px; font-weight: 600;
+    background: #1e1e30; border: 1px solid #333;
+    display: flex; align-items: center; gap: 6px;
+    z-index: 10;
+  }
+  #status .dot {
+    width:8px; height:8px; border-radius:50%;
+    background: #555;
+  }
+  #status.connected .dot { background: #4ade80; }
+  #status.disconnected .dot { background: #f87171; }
+
+  /* Legend */
+  #legend {
+    position: absolute; bottom:12px; left:12px;
+    background: rgba(15,15,26,0.85); border: 1px solid #333;
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 11px; z-index: 10;
+  }
+  #legend .item { display:flex; align-items:center; gap:6px; margin: 3px 0; }
+  #legend .swatch {
+    width:12px; height:12px; border-radius:3px;
+    display:inline-block; flex-shrink:0;
+  }
+
+  /* ── Right: Event sidebar ───────────────────────── */
+  #sidebar {
+    width: 320px;
+    background: #13132a;
+    border-left: 1px solid #222;
+    display: flex; flex-direction: column;
+  }
+  #sidebar h2 {
+    padding: 14px 16px; font-size: 13px;
+    border-bottom: 1px solid #222; color: #8888aa;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  #event-log {
+    flex:1; overflow-y:auto; padding: 8px;
+  }
+  .event-card {
+    background: #1a1a35;
+    border: 1px solid #2a2a44;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    animation: slideIn 0.3s ease-out;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .event-card:hover { border-color: #4488ff; }
+  .event-card .tag {
+    display: inline-block;
+    padding: 1px 6px; border-radius: 3px;
+    font-size: 10px; font-weight: 700;
+    margin-right: 6px;
+  }
+  .tag-save  { background:#55A868; color:#fff; }
+  .tag-search { background:#4C72B0; color:#fff; }
+  .tag-delete { background:#C44E52; color:#fff; }
+  .tag-link  { background:#8172B2; color:#fff; }
+  .event-card .time { color:#666; font-size:10px; float:right; }
+  .event-card .body { margin-top:4px; color:#aaa; line-height:1.4; }
+
+  /* Stats bar */
+  #stats {
+    padding: 10px 16px;
+    border-top: 1px solid #222;
+    font-size: 11px; color: #666;
+    display: flex; gap: 12px;
+  }
+  #stats span { color: #8888cc; font-weight:600; }
+
+  @keyframes slideIn {
+    from { opacity:0; transform:translateY(-8px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="graph-container">
+  <div id="status" class="disconnected">
+    <div class="dot"></div>
+    <span id="status-text">Connecting…</span>
+  </div>
+  <div id="network"></div>
+  <div id="legend">
+    <div class="item"><span class="swatch" style="background:#4C72B0"></span> fact</div>
+    <div class="item"><span class="swatch" style="background:#DD8452"></span> preference</div>
+    <div class="item"><span class="swatch" style="background:#55A868"></span> experience</div>
+    <div class="item"><span class="swatch" style="background:#C44E52"></span> emotion</div>
+    <div class="item"><span class="swatch" style="background:#8172B2"></span> technical</div>
+    <div class="item"><span class="swatch" style="background:#937860"></span> core_principle</div>
+  </div>
+</div>
+
+<div id="sidebar">
+  <h2>Event Log</h2>
+  <div id="event-log"></div>
+  <div id="stats">
+    Nodes: <span id="stat-nodes">0</span> &nbsp;
+    Edges: <span id="stat-edges">0</span>
+  </div>
+</div>
+
+<script>
+// ── Vis.js setup ──────────────────────────────────────────────
+const nodes = new vis.DataSet();
+const edges = new vis.DataSet();
+
+const container = document.getElementById('network');
+const network = new vis.Network(container, { nodes, edges }, {
+  physics: {
+    solver: 'forceAtlas2Based',
+    forceAtlas2Based: {
+      gravitationalConstant: -40,
+      centralGravity: 0.005,
+      springLength: 160,
+      springConstant: 0.06,
+      damping: 0.4,
+    },
+    stabilization: { enabled: true, iterations: 120 },
+  },
+  nodes: {
+    shape: 'dot',
+    font: { size: 11, color: '#ccc', face: 'monospace' },
+    borderWidth: 2,
+    shadow: false,
+  },
+  edges: {
+    color: { color: '#444', highlight: '#88aaff', hover: '#666' },
+    width: 1,
+    smooth: { type: 'continuous' },
+    arrows: { to: { enabled: true, scaleFactor: 0.4 } },
+  },
+  interaction: {
+    hover: true,
+    tooltipDelay: 150,
+    zoomView: true,
+    dragView: true,
+  },
+});
+
+// ── Helpers ───────────────────────────────────────────────────
+const GLOW_DURATION = 4000;
+
+function nodeSize(accessCount, maxAccess) {
+  if (maxAccess <= 0) return 14;
+  return 14 + 30 * (accessCount / maxAccess);
+}
+
+function makeTitle(n) {
+  const el = document.createElement('div');
+  el.style.cssText = 'background:#1a1a35;color:#ccc;padding:10px 14px;border-radius:6px;' +
+    'border:1px solid #444;font:12px Menlo,Consolas,monospace;' +
+    'max-width:360px;line-height:1.6;word-wrap:break-word;overflow-wrap:break-word;white-space:normal;';
+  el.innerHTML =
+    `<div style="color:#fff;font-weight:700;margin-bottom:6px;word-break:break-all">${n.id}</div>` +
+    `<div><span style="color:#888">Category:</span> ${n.category}</div>` +
+    `<div style="word-break:keep-all;overflow-wrap:break-word"><span style="color:#888">Content:</span> ${n.content}</div>` +
+    `<div><span style="color:#888">Keywords:</span> ${(n.keywords||[]).join(', ')}</div>` +
+    `<div><span style="color:#888">Access:</span> ${n.access_count}</div>` +
+    `<div><span style="color:#888">Created:</span> ${n.created_at}</div>` +
+    (n.pinned ? '<div style="margin-top:4px;color:#FFD700">📌 Pinned</div>' : '');
+  return el;
+}
+
+function updateStats() {
+  document.getElementById('stat-nodes').textContent = nodes.length;
+  document.getElementById('stat-edges').textContent = edges.length;
+}
+
+function addEvent(tag, text, nodeIds, timestamp) {
+  const log = document.getElementById('event-log');
+  const card = document.createElement('div');
+  card.className = 'event-card';
+  const time = timestamp || new Date().toLocaleTimeString();
+  card.innerHTML =
+    `<span class="tag tag-${tag}">${tag.toUpperCase()}</span>` +
+    `<span class="time">${time}</span>` +
+    `<div class="body">${text}</div>`;
+
+  // Hover → highlight related nodes
+  if (nodeIds && nodeIds.length > 0) {
+    card.addEventListener('mouseenter', () => {
+      const valid = nodeIds.filter(id => nodes.get(id));
+      if (valid.length === 0) return;
+      dimAllExcept(valid);
+      valid.forEach(id => glowNode(id, '#f0c040', 60000));
+      focusOnNodes(valid);
+    });
+    card.addEventListener('mouseleave', () => restoreAll());
+  }
+
+  log.prepend(card);
+  while (log.children.length > 100) log.removeChild(log.lastChild);
+}
+
+let maxAccess = 1;
+
+function addNodeToGraph(n) {
+  if (n.access_count > maxAccess) maxAccess = n.access_count;
+  const borderColor = n.pinned ? '#FFD700' : n.color;
+  nodes.update({
+    id: n.id,
+    label: n.label || (n.content || '').substring(0, 30),
+    title: makeTitle(n),
+    color: {
+      background: n.color,
+      border: borderColor,
+      highlight: { background: n.color, border: '#ffffff' },
+    },
+    size: nodeSize(n.access_count, maxAccess),
+    borderWidth: n.pinned ? 3 : 2,
+  });
+}
+
+// ── Glow / Highlight ─────────────────────────────────────────
+function glowNode(id, glowColor, duration) {
+  const existing = nodes.get(id);
+  if (!existing) return;
+  // Apply glow
+  nodes.update({
+    id,
+    shadow: { enabled: true, color: glowColor, size: 20, x: 0, y: 0 },
+    borderWidth: 4,
+    color: { ...existing.color, border: glowColor },
+    font: { size: 13, color: '#fff', face: 'monospace' },
+  });
+  // Remove glow after duration
+  setTimeout(() => {
+    const cur = nodes.get(id);
+    if (!cur) return;
+    nodes.update({
+      id,
+      shadow: { enabled: false },
+      borderWidth: 2,
+      font: { size: 11, color: '#ccc', face: 'monospace' },
+    });
+  }, duration || GLOW_DURATION);
+}
+
+function focusOnNodes(ids) {
+  if (ids.length === 0) return;
+  network.fit({ nodes: ids, animation: { duration: 600, easingFunction: 'easeInOutQuad' } });
+}
+
+// ── Dim / restore all nodes for search highlight ─────────────
+let dimmedState = false;
+
+function dimAllExcept(highlightIds) {
+  const hlSet = new Set(highlightIds);
+  dimmedState = true;
+  nodes.forEach(n => {
+    if (!hlSet.has(n.id)) {
+      nodes.update({ id: n.id, opacity: 0.15 });
+    } else {
+      nodes.update({ id: n.id, opacity: 1.0 });
+    }
+  });
+  edges.forEach(e => {
+    const connected = hlSet.has(e.from) && hlSet.has(e.to);
+    edges.update({ id: e.id, color: { color: connected ? '#6688cc' : '#222' } });
+  });
+}
+
+function restoreAll() {
+  if (!dimmedState) return;
+  dimmedState = false;
+  nodes.forEach(n => nodes.update({ id: n.id, opacity: 1.0 }));
+  edges.forEach(e => edges.update({ id: e.id, color: { color: '#444' } }));
+}
+
+// ── Replay buffered events (log only, no graph mutations) ─────
+function replayEvent(e) {
+  switch (e.type) {
+    case 'node_add': {
+      const n = e.node || {};
+      const preview = (n.content || '').substring(0, 40);
+      addEvent('save', `<b>${n.id}</b> — ${preview}`, [n.id]);
+      break;
+    }
+    case 'node_remove':
+      addEvent('delete', `Removed <b>${e.memory_id}</b>`, []);
+      break;
+    case 'search_highlight': {
+      const ids = (e.results || []).map(r => r.memory_id);
+      const q = (e.query || '').substring(0, 30);
+      addEvent('search',
+        `"${q}" → ${ids.length} results<br>` +
+        ids.map(id => `<b>${id}</b>`).join(', '),
+        ids
+      );
+      break;
+    }
+  }
+}
+
+// ── WebSocket ─────────────────────────────────────────────────
+const WS_URL = `ws://${location.host}`;
+let ws;
+let reconnectDelay = 1000;
+
+function setStatus(connected) {
+  const el = document.getElementById('status');
+  const txt = document.getElementById('status-text');
+  if (connected) {
+    el.className = 'connected';
+    txt.textContent = 'Connected';
+  } else {
+    el.className = 'disconnected';
+    txt.textContent = 'Reconnecting…';
+  }
+}
+
+function connect() {
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    setStatus(true);
+    reconnectDelay = 1000;
+  };
+
+  ws.onclose = () => {
+    setStatus(false);
+    setTimeout(connect, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 1.5, 10000);
+  };
+
+  ws.onerror = () => ws.close();
+
+  ws.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    handleEvent(msg);
+  };
+}
+
+function handleEvent(msg) {
+  switch (msg.type) {
+
+    // ── Full initial state ───────────────────────
+    case 'init': {
+      nodes.clear();
+      edges.clear();
+      maxAccess = 1;
+      (msg.nodes || []).forEach(n => {
+        if (n.access_count > maxAccess) maxAccess = n.access_count;
+      });
+      (msg.nodes || []).forEach(n => addNodeToGraph(n));
+      (msg.edges || []).forEach(e => {
+        edges.add({ from: e.from, to: e.to, id: `${e.from}→${e.to}` });
+      });
+      updateStats();
+      // Replay buffered events as log entries
+      (msg.recent_events || []).forEach(e => replayEvent(e));
+      addEvent('link', `Graph loaded: ${msg.nodes.length} nodes, ${msg.edges.length} edges`, []);
+      // Fit view after stabilization
+      network.once('stabilized', () => network.fit({ animation: true }));
+      break;
+    }
+
+    // ── New memory saved ─────────────────────────
+    case 'node_add': {
+      const n = msg.node;
+      addNodeToGraph(n);
+      // Add edges for auto-linked related_ids
+      (n.related_ids || []).forEach(rid => {
+        const eid = `${n.id}→${rid}`;
+        if (!edges.get(eid)) {
+          edges.add({ id: eid, from: n.id, to: rid });
+        }
+        const eidRev = `${rid}→${n.id}`;
+        if (!edges.get(eidRev)) {
+          edges.add({ id: eidRev, from: rid, to: n.id });
+        }
+      });
+      updateStats();
+      glowNode(n.id, '#4ade80', GLOW_DURATION);
+      focusOnNodes([n.id]);
+      const preview = (n.content || '').substring(0, 40);
+      addEvent('save', `<b>${n.id}</b> — ${preview}`, [n.id]);
+      break;
+    }
+
+    // ── Memory deleted ───────────────────────────
+    case 'node_remove': {
+      const id = msg.memory_id;
+      // Remove all connected edges
+      edges.forEach(e => {
+        if (e.from === id || e.to === id) edges.remove(e.id);
+      });
+      nodes.remove(id);
+      updateStats();
+      addEvent('delete', `Removed <b>${id}</b>`, []);
+      break;
+    }
+
+    // ── Search results highlight ─────────────────
+    case 'search_highlight': {
+      restoreAll();
+      const ids = (msg.results || []).map(r => r.memory_id);
+      if (ids.length === 0) break;
+      dimAllExcept(ids);
+      ids.forEach(id => glowNode(id, '#60a5fa', 5000));
+      focusOnNodes(ids);
+      const q = (msg.query || '').substring(0, 30);
+      addEvent('search',
+        `"${q}" → ${ids.length} results<br>` +
+        ids.map(id => `<b>${id}</b>`).join(', '),
+        ids
+      );
+      // Auto-restore after 6s
+      setTimeout(restoreAll, 6000);
+      break;
+    }
+
+    // ── Edge added (from auto-link or manual) ────
+    case 'edge_add': {
+      const eid = `${msg.from}→${msg.to}`;
+      if (!edges.get(eid)) {
+        edges.add({ id: eid, from: msg.from, to: msg.to });
+      }
+      updateStats();
+      break;
+    }
+
+    case 'ping':
+      break;
+
+    default:
+      console.log('Unknown event:', msg);
+  }
+}
+
+// Click on background restores dimming
+network.on('click', (params) => {
+  if (params.nodes.length === 0 && params.edges.length === 0) {
+    restoreAll();
+  }
+});
+
+connect();
+</script>
+</body>
+</html>
