@@ -41,6 +41,9 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.5",
 ]
+viz = [
+    "pyvis>=0.3.2",
+]
 train = [
     "ollama>=0.4.0",
     "pandas>=2.0",
@@ -51,6 +54,7 @@ train = [
 
 [project.scripts]
 aimemory-mcp = "aimemory.mcp.server:main"
+aimemory-viz = "aimemory.visualize:main"
 
 [build-system]
 requires = ["hatchling"]

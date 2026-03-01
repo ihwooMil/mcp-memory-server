@@ -50,6 +50,7 @@ def test_server_lists_tools():
         "sleep_cycle_run",
         "policy_status",
         "policy_decide",
+        "memory_visualize",
     }
 
     assert expected_tools.issubset(tool_names), f"Missing tools: {expected_tools - tool_names}"

@@ -334,6 +334,45 @@ async def policy_decide(
         )
 
 
+@mcp.tool()
+async def memory_visualize(
+    output_path: str | None = None,
+    include_inactive: bool = False,
+) -> str:
+    """Generate an interactive HTML visualization of the memory graph.
+
+    Creates a browser-viewable graph showing memory nodes, relationships,
+    and knowledge graph entity triples. Requires the 'viz' extra to be installed.
+
+    Args:
+        output_path: Optional output file path for the HTML. Defaults to data/visualizations/.
+        include_inactive: If True, include inactive (forgotten) memories in the graph.
+    """
+    try:
+        from aimemory.visualize import visualize_from_bridge
+
+        result = visualize_from_bridge(
+            bridge=_get_bridge(),
+            output_path=output_path,
+            include_inactive=include_inactive,
+        )
+        return json.dumps(result, ensure_ascii=False)
+    except ImportError:
+        return json.dumps({
+            "success": False,
+            "error": (
+                "pyvis is required for visualization. "
+                "Install it with: pip install 'mcp-memory-server[viz]' "
+                "or: uv sync --extra viz"
+            ),
+        })
+    except Exception as exc:
+        logger.exception("memory_visualize failed")
+        return json.dumps(
+            {"success": False, "error": f"Internal error: {type(exc).__name__}: {exc}"}
+        )
+
+
 def main() -> None:
     """Entry point for the MCP server."""
     logger.info("Starting AIMemory MCP server (stdio transport)")
