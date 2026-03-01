@@ -149,7 +149,7 @@ claude mcp add aimemory -- aimemory-mcp --with-live
 Real-time WebSocket-based memory graph that updates as memories are saved, searched, or deleted.
 
 <p align="center">
-  <img src="docs/live-graph.png" alt="Live Memory Graph" width="720">
+  <img src="https://raw.githubusercontent.com/ihwooMil/long-term-memory/main/docs/live-graph.png" alt="Live Memory Graph" width="720">
 </p>
 
 ```bash
