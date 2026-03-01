@@ -31,7 +31,8 @@ mcp = FastMCP(
     instructions=(
         "You have access to a persistent memory system. "
         "Call auto_search at the start of every user turn to retrieve relevant memories. "
-        "Call memory_save when the user shares important information."
+        "Call memory_save for any information worth remembering — "
+        "facts, preferences, decisions, experiences, and technical details."
     ),
 )
 
