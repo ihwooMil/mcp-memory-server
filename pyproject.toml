@@ -1,6 +1,6 @@
 [project]
 name = "long-term-memory"
-version = "0.3.0"
+version = "0.3.1"
 description = "Long-term memory system for AI assistants — persistent, searchable, self-organizing memory powered by semantic search, knowledge graphs, and reinforcement learning"
 requires-python = ">=3.11,<3.14"
 license = "MIT"
