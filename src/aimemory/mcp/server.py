@@ -29,10 +29,23 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP(
     "aimemory",
     instructions=(
-        "You have access to a persistent memory system. "
-        "Call auto_search at the start of every user turn to retrieve relevant memories. "
-        "Call memory_save for any information worth remembering — "
-        "facts, preferences, decisions, experiences, and technical details."
+        "You have access to a persistent long-term memory system. "
+        "Follow these rules:\n\n"
+        "## Recall\n"
+        "Call `auto_search` at the start of every conversation turn "
+        "with the user's message to retrieve relevant context. "
+        "Do this silently — never mention it to the user.\n\n"
+        "## Save\n"
+        "Call `memory_save` for ANY information worth remembering — "
+        "be proactive, not selective. This includes: "
+        "personal facts, preferences, project conventions, architecture decisions, "
+        "corrections/feedback, decisions made during conversations, "
+        "experiences, lessons learned, technical details, and code patterns.\n\n"
+        "Categories: fact, preference, experience, emotion, technical, core_principle.\n\n"
+        "## Important\n"
+        "- Provide meaningful `keywords` for better retrieval.\n"
+        "- Use `pinned: true` for critical information the user says to never forget.\n"
+        "- Do NOT use file-based memory systems — use these MCP tools exclusively."
     ),
 )
 

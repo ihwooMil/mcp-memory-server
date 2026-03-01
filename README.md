@@ -61,13 +61,25 @@ pip install long-term-memory[viz]    # Static graph visualization
 ```
 </details>
 
-### 2. Connect to OpenClaw
+### 2. Setup client instructions
+
+```bash
+# For OpenClaw
+aimemory-setup openclaw
+
+# For Claude Code
+aimemory-setup claude
+```
+
+This injects memory usage instructions into your client's configuration files (`SOUL.md`/`TOOLS.md` for OpenClaw, `CLAUDE.md` for Claude Code). Re-run anytime to update.
+
+### 3. Connect to OpenClaw
 
 ```bash
 mcporter config add aimemory --command aimemory-mcp --scope home
 ```
 
-### 3. Connect to Claude Desktop
+### 4. Connect to Claude Desktop
 
 Add to your `claude_desktop_config.json`:
 
@@ -118,7 +130,7 @@ Then open `http://127.0.0.1:8765` to see the live memory graph.
 ```
 </details>
 
-### 4. Connect to Claude Code
+### 5. Connect to Claude Code
 
 ```bash
 claude mcp add aimemory -- aimemory-mcp

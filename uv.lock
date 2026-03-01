@@ -950,7 +950,7 @@ wheels = [
 
 [[package]]
 name = "long-term-memory"
-version = "0.3.0"
+version = "0.3.2"
 source = { editable = "." }
 dependencies = [
     { name = "chromadb" },
