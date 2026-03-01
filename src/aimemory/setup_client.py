@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import shutil
 import sys
 from importlib import resources
 from pathlib import Path
@@ -51,6 +53,71 @@ def _inject_block(file_path: Path, block_content: str) -> None:
     file_path.write_text(new_text, encoding="utf-8")
 
 
+def _find_aimemory_mcp_command() -> str:
+    """Find the absolute path to the ``aimemory-mcp`` executable."""
+    mcp_bin = shutil.which("aimemory-mcp")
+    if mcp_bin:
+        return str(Path(mcp_bin).resolve())
+    # Fallback: look for it in the current venv
+    import sysconfig
+
+    scripts_dir = sysconfig.get_path("scripts")
+    if scripts_dir:
+        candidate = Path(scripts_dir) / "aimemory-mcp"
+        if candidate.exists():
+            return str(candidate.resolve())
+    return "aimemory-mcp"
+
+
+def _install_openclaw_extension(openclaw_dir: Path) -> None:
+    """Install the AIMemory extension into OpenClaw's extensions directory.
+
+    Creates ~/.openclaw/extensions/aimemory/ with the plugin files that
+    bridge aimemory MCP tools into OpenClaw's native tool system.
+    """
+    ext_dir = openclaw_dir / "extensions" / "aimemory"
+    ext_dir.mkdir(parents=True, exist_ok=True)
+
+    mcp_command = _find_aimemory_mcp_command()
+
+    # package.json
+    package_json = {
+        "name": "aimemory",
+        "version": "0.1.0",
+        "description": "AIMemory long-term memory tools for OpenClaw",
+        "type": "module",
+        "main": "index.ts",
+        "files": ["index.ts", "openclaw.plugin.json"],
+        "openclaw": {"extensions": ["./index.ts"]},
+    }
+    (ext_dir / "package.json").write_text(
+        json.dumps(package_json, indent=2) + "\n", encoding="utf-8"
+    )
+
+    # openclaw.plugin.json
+    plugin_json = {
+        "id": "aimemory",
+        "name": "AIMemory",
+        "description": "Persistent long-term memory with semantic search and knowledge graphs",
+        "configSchema": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {},
+        },
+    }
+    (ext_dir / "openclaw.plugin.json").write_text(
+        json.dumps(plugin_json, indent=2) + "\n", encoding="utf-8"
+    )
+
+    # index.ts — bridge plugin
+    index_ts = _load_template("openclaw_extension.ts")
+    # Inject the resolved MCP command path
+    index_ts = index_ts.replace("__AIMEMORY_MCP_COMMAND__", mcp_command)
+    (ext_dir / "index.ts").write_text(index_ts, encoding="utf-8")
+
+    print(f"  Installed extension to {ext_dir}")
+
+
 def setup_openclaw(workspace: Path) -> None:
     """Inject AIMemory instructions into OpenClaw workspace files."""
     workspace = workspace.expanduser()
@@ -66,6 +133,10 @@ def setup_openclaw(workspace: Path) -> None:
     tools_content = _load_template("openclaw_tools.md")
     _inject_block(tools_path, tools_content)
     print(f"  Updated {tools_path}")
+
+    # Install OpenClaw extension
+    openclaw_dir = workspace.parent
+    _install_openclaw_extension(openclaw_dir)
 
 
 def setup_claude(claude_dir: Path) -> None:
