@@ -331,30 +331,34 @@ class MemoryBridge:
                 content=user_message,
             )
 
-            # 2. Heuristic instant filter: extract high-value turns to ChromaDB immediately
+            # 2. Heuristic instant filter: split into sentences, extract each independently
             if len(user_message.strip()) > 20:
-                candidate = self._heuristic_extractor.evaluate(user_message, role="user")
-                if candidate.should_extract:
-                    # Dedup check before saving
-                    existing = self._store.search(user_message, top_k=1, track_access=False)
+                candidates = self._heuristic_extractor.evaluate_sentences(
+                    user_message, role="user",
+                )
+                for candidate in candidates:
+                    # Dedup check per sentence
+                    existing = self._store.search(
+                        candidate.content, top_k=1, track_access=False,
+                    )
                     is_dup = (
                         existing
                         and existing[0].similarity_score is not None
                         and existing[0].similarity_score >= 0.90
                     )
                     if not is_dup:
-                        content = user_message[:300].strip()
                         self._store.add_memory(
-                            content=content,
+                            content=candidate.content[:300].strip(),
                             keywords=candidate.keywords,
                             category=candidate.category,
                             conversation_id=self._conversation_id,
                             extraction_source="auto",
                         )
                         logger.debug(
-                            "Auto-extracted memory from turn %d (category=%s)",
+                            "Auto-extracted memory from turn %d (category=%s, len=%d)",
                             self._turn_counter,
                             candidate.category,
+                            len(candidate.content),
                         )
         except Exception:
             # Logging/extraction failure must never block search

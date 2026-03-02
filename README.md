@@ -32,6 +32,7 @@ Current AI memory tools have two critical problems:
 - **Auto-linking** — New memories automatically link to similar existing ones (similarity ≥ 0.92)
 - **Multi-resolution text** — Full text → summary → entity triples, composed within token budget
 - **Automatic conversation logging** — All turns recorded to SQLite; high-value turns instantly extracted to ChromaDB
+- **Sentence-level splitting** — Multi-sentence turns split into individual memories with independent categories
 - **Sleep cycle memory extraction** — Batch-processes missed memories from conversation logs using progressive RL extraction
 - **Auto category classification** — `memory_save` auto-classifies content category from patterns
 - **Forgetting pipeline** — Decay-based aging with consolidation, pinning, and immutable protection

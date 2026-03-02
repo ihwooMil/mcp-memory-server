@@ -61,6 +61,33 @@ _EMOTION_KEYWORDS = re.compile(
     r"기쁘|슬프|화나|무서|불안|설레|걱정|힘들|어렵|좋아|싫어|즐거|행복|우울|피곤|신나"
 )
 
+# Sentence-ending punctuation (split after .!? followed by space or end)
+_SENTENCE_END = re.compile(r"(?<=[.!?。！？])\s+|(?<=[.!?。！？])(?=\S)")
+# Korean 종결어미 + comma (fixed-width lookbehind: 1 char)
+_CLAUSE_COMMA = re.compile(r"(?<=[요다음함])[,，]\s*")
+
+
+def split_sentences(text: str, min_length: int = 5) -> list[str]:
+    """Split text into semantic units (sentences or clauses).
+
+    Splits on:
+    - Sentence-ending punctuation (.!?。！？) followed by whitespace
+    - Korean 종결어미(요/다/음/함) + comma
+
+    Returns list of non-empty segments at least `min_length` chars.
+    If the text doesn't split, returns [text] as-is.
+    Korean text carries high information density per character,
+    so min_length defaults to 5.
+    """
+    # Two-pass splitting: first by sentence endings, then by clause commas
+    parts = _SENTENCE_END.split(text.strip())
+    segments: list[str] = []
+    for part in parts:
+        sub = _CLAUSE_COMMA.split(part)
+        segments.extend(sub)
+    segments = [s.strip() for s in segments if s and len(s.strip()) >= min_length]
+    return segments if segments else [text.strip()] if text.strip() else []
+
 
 # ── Data structures ──────────────────────────────────────────────────
 
@@ -106,8 +133,14 @@ class HeuristicMemoryExtractor:
     def __init__(self, min_info_density: float = 0.1) -> None:
         self._min_info_density = min_info_density
 
-    def evaluate(self, content: str, role: str = "user") -> ExtractionCandidate:
-        """Evaluate whether a turn should be extracted as a memory."""
+    def evaluate(
+        self, content: str, role: str = "user", min_length: int = 5,
+    ) -> ExtractionCandidate:
+        """Evaluate whether a turn should be extracted as a memory.
+
+        Args:
+            min_length: Minimum content length to consider (default 5 for Korean).
+        """
         from aimemory.selfplay.memory_agent import classify_category, extract_keywords
 
         candidate = ExtractionCandidate(
@@ -119,7 +152,7 @@ class HeuristicMemoryExtractor:
         )
 
         # Skip very short content
-        if len(content.strip()) <= 20:
+        if len(content.strip()) <= min_length:
             return candidate
 
         keywords = extract_keywords(content)
@@ -158,6 +191,25 @@ class HeuristicMemoryExtractor:
                 candidate.category = "emotion"
 
         return candidate
+
+    def evaluate_sentences(self, content: str, role: str = "user") -> list[ExtractionCandidate]:
+        """Split content into sentences and evaluate each independently.
+
+        Returns only candidates where should_extract is True.
+        If content is a single sentence, behaves like evaluate().
+        """
+        sentences = split_sentences(content)
+        if len(sentences) <= 1:
+            # Single sentence — evaluate as-is
+            candidate = self.evaluate(content, role)
+            return [candidate] if candidate.should_extract else []
+
+        candidates = []
+        for sentence in sentences:
+            candidate = self.evaluate(sentence, role)
+            if candidate.should_extract:
+                candidates.append(candidate)
+        return candidates
 
     def _has_pattern_match(self, content: str) -> bool:
         """Check if content matches any extraction-worthy pattern."""
@@ -455,32 +507,35 @@ def extract_from_turns(
         for turn in conv_turns:
             result.turns_processed += 1
             try:
-                candidate = extractor.evaluate(turn["content"], turn["role"])
+                # Split into sentences and evaluate each independently
+                sentences = split_sentences(turn["content"])
+                for sentence in sentences:
+                    candidate = extractor.evaluate(sentence, turn["role"])
 
-                if not candidate.should_extract:
-                    continue
-
-                # Dedup check: search for similar existing memories
-                existing = store.search(
-                    turn["content"],
-                    top_k=1,
-                    track_access=False,
-                )
-                if existing and existing[0].similarity_score is not None:
-                    if existing[0].similarity_score >= dedup_threshold:
-                        result.memories_deduplicated += 1
+                    if not candidate.should_extract:
                         continue
 
-                # Save to store
-                content = turn["content"][:300].strip()
-                store.add_memory(
-                    content=content,
-                    keywords=candidate.keywords,
-                    category=candidate.category,
-                    conversation_id=conv_id,
-                    extraction_source=candidate.extraction_source,
-                )
-                result.memories_extracted += 1
+                    # Dedup check per sentence
+                    existing = store.search(
+                        sentence,
+                        top_k=1,
+                        track_access=False,
+                    )
+                    if existing and existing[0].similarity_score is not None:
+                        if existing[0].similarity_score >= dedup_threshold:
+                            result.memories_deduplicated += 1
+                            continue
+
+                    # Save to store
+                    content = sentence[:300].strip()
+                    store.add_memory(
+                        content=content,
+                        keywords=candidate.keywords,
+                        category=candidate.category,
+                        conversation_id=conv_id,
+                        extraction_source=candidate.extraction_source,
+                    )
+                    result.memories_extracted += 1
 
             except Exception as exc:
                 msg = f"Extraction error (conv={conv_id}, turn={turn.get('turn_index')}): {exc}"

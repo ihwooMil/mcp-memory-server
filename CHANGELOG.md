@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2026-03-03
+
+### Added
+
+- **Sentence-level memory splitting** — Multi-sentence turns are split into individual sentences, each evaluated and saved independently with its own category and keywords
+  - `split_sentences()` splits on sentence-ending punctuation and Korean 종결어미+comma
+  - Both real-time (`auto_search`) and batch (sleep cycle) extraction use sentence splitting
+  - Example: "저는 Python 개발자입니다. 김치찌개를 좋아합니다." → `[technical]` + `[preference]`
+
+### Changed
+
+- `HeuristicMemoryExtractor.evaluate()` minimum content length lowered from 20 to 5 chars (Korean text carries high info density per character)
+
 ## [0.6.0] - 2026-03-03
 
 ### Added
