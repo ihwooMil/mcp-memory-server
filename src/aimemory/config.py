@@ -183,6 +183,14 @@ class SleepCycleConfig(BaseModel):
     checkpoint_dir: str = "checkpoints/sleep_cycle"
     report_dir: str = "data/reports/sleep_cycle"
 
+    # Memory extraction from conversation logs
+    enable_memory_extraction: bool = True
+    extraction_max_turns: int = 500
+    extraction_dedup_threshold: float = 0.90
+    extraction_min_info_density: float = 0.1
+    extraction_rl_confidence_threshold: int = 50
+    log_retention_days: int = 30
+
 
 class ComposerConfig(BaseModel):
     """Context composer configuration."""

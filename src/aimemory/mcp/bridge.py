@@ -5,11 +5,14 @@ from __future__ import annotations
 import logging
 import math
 import os
+import uuid as _uuid
+from pathlib import Path
 from typing import Any
 
 from aimemory.config import MCPServerConfig
 from aimemory.live_graph.notify import notify_live_graph
 from aimemory.memory.composer import ContextComposer
+from aimemory.memory.conversation_log import ConversationLog
 from aimemory.memory.graph_store import GraphMemoryStore, ImmutableMemoryError, MemoryNode
 from aimemory.memory.sleep_cycle import SleepCycleRunner
 from aimemory.online.policy import MemoryPolicyAgent, OnlinePolicy, StateEncoder
@@ -173,9 +176,21 @@ class MemoryBridge:
             reranker=self._reranker,
         )
 
+        # Conversation log for automatic turn recording
+        log_db_path = Path(self._persist_directory) / "conversation_log.db"
+        self._conversation_log = ConversationLog(log_db_path)
+        self._conversation_id = _uuid.uuid4().hex[:16]
+        self._turn_counter = 0
+
+        # Heuristic extractor for real-time extraction in auto_search
+        from aimemory.memory.extraction import HeuristicMemoryExtractor
+
+        self._heuristic_extractor = HeuristicMemoryExtractor()
+
         self._sleep_runner = SleepCycleRunner(
             store=self._store,
             policy=self._policy,
+            conversation_log=self._conversation_log,
         )
 
         # Track recent policy actions for status reporting
@@ -301,8 +316,49 @@ class MemoryBridge:
         """Search for relevant memories and compose a context string.
 
         Returns dict with context string, memory count, token count, and details.
+        Also performs dual-saving: SQLite log + heuristic instant extraction.
         """
         import random
+
+        # ── Dual saving: record turn + heuristic instant extraction ──
+        try:
+            self._turn_counter += 1
+            # 1. Always log to SQLite (for sleep cycle batch processing)
+            self._conversation_log.append_turn(
+                conversation_id=self._conversation_id,
+                turn_index=self._turn_counter,
+                role="user",
+                content=user_message,
+            )
+
+            # 2. Heuristic instant filter: extract high-value turns to ChromaDB immediately
+            if len(user_message.strip()) > 20:
+                candidate = self._heuristic_extractor.evaluate(user_message, role="user")
+                if candidate.should_extract:
+                    # Dedup check before saving
+                    existing = self._store.search(user_message, top_k=1, track_access=False)
+                    is_dup = (
+                        existing
+                        and existing[0].similarity_score is not None
+                        and existing[0].similarity_score >= 0.90
+                    )
+                    if not is_dup:
+                        content = user_message[:300].strip()
+                        self._store.add_memory(
+                            content=content,
+                            keywords=candidate.keywords,
+                            category=candidate.category,
+                            conversation_id=self._conversation_id,
+                            extraction_source="auto",
+                        )
+                        logger.debug(
+                            "Auto-extracted memory from turn %d (category=%s)",
+                            self._turn_counter,
+                            candidate.category,
+                        )
+        except Exception:
+            # Logging/extraction failure must never block search
+            logger.debug("Conversation logging/extraction failed", exc_info=True)
 
         budget = token_budget or self._token_budget
         effective_top_k = top_k or self._top_k

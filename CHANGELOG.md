@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-03-03
+
+### Added
+
+- **Automatic conversation logging** — All conversation turns are recorded to a SQLite append-only log (`conversation_log.db`) with WAL mode for concurrent safety
+- **Dual-saving in `auto_search`** — Every turn is logged to SQLite for batch processing, and high-value turns (matching personal/preference/tech/emotion patterns) are instantly extracted to ChromaDB
+- **Memory extraction pipeline** — New `extraction.py` module with three extractors:
+  - `HeuristicMemoryExtractor` — Pattern-matching based (reuses `extract_keywords()` / `classify_category()`)
+  - `RLMemoryExtractor` — MLP bandit for EXTRACT/SKIP binary decisions with imitation learning
+  - `ProgressiveExtraction` — Manages transition: `heuristic_only` → `rl_assisted` → `rl_primary`
+- **Sleep cycle extraction task** (Task 0) — Batch-processes unprocessed conversation logs to catch memories missed by real-time heuristics, with deduplication (similarity ≥ 0.90)
+- **Sleep cycle log cleanup** (Task 5) — Deletes processed logs older than 30 days (configurable)
+- **Auto category classification** — `memory_save` default category changed to `"auto"`, which auto-classifies content using pattern matching
+- **`extraction_source` metadata** — Tracks how each memory was created: `"heuristic"`, `"rl"`, `"auto"`, or `""` (manual)
+- **6 new extraction config options** in `SleepCycleConfig`: `enable_memory_extraction`, `extraction_max_turns`, `extraction_dedup_threshold`, `extraction_min_info_density`, `extraction_rl_confidence_threshold`, `log_retention_days`
+
+### Changed
+
+- `SleepCycleRunner` now accepts optional `conversation_log` parameter
+- `SleepCycleReport` includes `extraction` and `log_cleanup_deleted` fields
+- `MemoryNode` includes `extraction_source` field
+- `GraphMemoryStore.add_memory()` accepts `extraction_source` parameter
+
 ## [0.3.0] - 2026-03-01
 
 ### Changed

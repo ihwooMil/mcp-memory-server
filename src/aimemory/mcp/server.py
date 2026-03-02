@@ -67,7 +67,7 @@ def _get_bridge() -> MemoryBridge:
 async def memory_save(
     content: str,
     keywords: list[str] | None = None,
-    category: str = "fact",
+    category: str = "auto",
     related_ids: list[str] | None = None,
     immutable: bool = False,
     pinned: bool = False,
@@ -79,11 +79,29 @@ async def memory_save(
         keywords: Optional list of keywords. Auto-extracted if not provided.
         category: Memory category. One of: fact, preference,
             experience, emotion, technical, core_principle.
+            Defaults to "auto" which auto-classifies from content.
         related_ids: Optional list of memory IDs to link as related.
         immutable: If True, memory cannot be updated or deleted.
         pinned: If True, memory is protected from the forgetting pipeline.
     """
     try:
+        # Auto-classify category if "auto"
+        if category == "auto":
+            from aimemory.selfplay.memory_agent import classify_category, extract_keywords
+
+            auto_keywords = keywords or extract_keywords(content)
+            raw = classify_category(content, auto_keywords)
+            cat_map = {
+                "general": "fact",
+                "personal": "fact",
+                "technical": "technical",
+                "preference": "preference",
+            }
+            category = cat_map.get(raw, "fact")
+            # Auto-extract keywords if not provided
+            if keywords is None:
+                keywords = auto_keywords
+
         result = _get_bridge().save_memory(
             content=content,
             keywords=keywords,

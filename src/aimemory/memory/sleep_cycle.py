@@ -22,6 +22,14 @@ from aimemory.memory.consolidation import (
     ConsolidationResult,
     MemoryConsolidator,
 )
+from aimemory.memory.conversation_log import ConversationLog
+from aimemory.memory.extraction import (
+    ExtractionResult,
+    HeuristicMemoryExtractor,
+    ProgressiveExtraction,
+    RLMemoryExtractor,
+    extract_from_turns,
+)
 from aimemory.memory.forgetting import (
     ForgettingPipeline,
     ForgettingResult,
@@ -43,11 +51,13 @@ class SleepCycleReport:
     duration_seconds: float = 0.0
     memory_count_before: int = 0
     memory_count_after: int = 0
+    extraction: ExtractionResult | None = None
     consolidation: ConsolidationResult | None = None
     resolution_regenerated: int = 0
     forgetting: ForgettingResult | None = None
     checkpoint_saved: bool = False
     checkpoint_path: str = ""
+    log_cleanup_deleted: int = 0
     errors: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -61,8 +71,18 @@ class SleepCycleReport:
             "resolution_regenerated": self.resolution_regenerated,
             "checkpoint_saved": self.checkpoint_saved,
             "checkpoint_path": self.checkpoint_path,
+            "log_cleanup_deleted": self.log_cleanup_deleted,
             "errors": self.errors,
         }
+
+        if self.extraction is not None:
+            result["extraction"] = {
+                "turns_processed": self.extraction.turns_processed,
+                "memories_extracted": self.extraction.memories_extracted,
+                "memories_deduplicated": self.extraction.memories_deduplicated,
+                "extraction_mode": self.extraction.extraction_mode,
+                "errors": self.extraction.errors,
+            }
 
         if self.consolidation is not None:
             result["consolidation"] = {
@@ -106,6 +126,14 @@ class SleepCycleReport:
             f"  Memories: {self.memory_count_before} → {self.memory_count_after}",
         ]
 
+        if self.extraction is not None:
+            lines.append(
+                f"  Extraction: {self.extraction.turns_processed} turns processed, "
+                f"{self.extraction.memories_extracted} extracted, "
+                f"{self.extraction.memories_deduplicated} deduplicated "
+                f"(mode={self.extraction.extraction_mode})"
+            )
+
         if self.consolidation is not None:
             lines.append(
                 f"  Consolidation: {self.consolidation.pairs_found} pairs found, "
@@ -124,6 +152,9 @@ class SleepCycleReport:
 
         if self.checkpoint_saved:
             lines.append(f"  Checkpoint: {self.checkpoint_path}")
+
+        if self.log_cleanup_deleted > 0:
+            lines.append(f"  Log cleanup: {self.log_cleanup_deleted} old turns deleted")
 
         if self.errors:
             lines.append(f"  Errors: {len(self.errors)}")
@@ -145,10 +176,12 @@ class SleepCycleRunner:
         store: GraphMemoryStore,
         config: SleepCycleConfig | None = None,
         policy: Any = None,
+        conversation_log: ConversationLog | None = None,
     ) -> None:
         self.store = store
         self.config = config or SleepCycleConfig()
         self.policy = policy
+        self.conversation_log = conversation_log
 
     def run(self) -> SleepCycleReport:
         """Execute the full sleep cycle."""
@@ -158,6 +191,42 @@ class SleepCycleRunner:
 
         # Count memories before
         report.memory_count_before = len(self.store.get_all_memories(include_inactive=True))
+
+        # Task 0: Memory extraction from unprocessed conversation logs
+        if self.config.enable_memory_extraction and self.conversation_log is not None:
+            try:
+                turns = self.conversation_log.get_unprocessed_turns(
+                    limit=self.config.extraction_max_turns,
+                )
+                if turns:
+                    heuristic = HeuristicMemoryExtractor(
+                        min_info_density=self.config.extraction_min_info_density,
+                    )
+                    rl_ext = RLMemoryExtractor()
+                    extractor = ProgressiveExtraction(
+                        heuristic=heuristic,
+                        rl_extractor=rl_ext,
+                        confidence_threshold=self.config.extraction_rl_confidence_threshold,
+                    )
+                    report.extraction = extract_from_turns(
+                        turns=turns,
+                        store=self.store,
+                        extractor=extractor,
+                        dedup_threshold=self.config.extraction_dedup_threshold,
+                    )
+                    # Mark all processed turns
+                    turn_ids = [t["id"] for t in turns]
+                    self.conversation_log.mark_processed(turn_ids)
+                    logger.info(
+                        "Extraction complete: %d processed, %d extracted, %d dedup",
+                        report.extraction.turns_processed,
+                        report.extraction.memories_extracted,
+                        report.extraction.memories_deduplicated,
+                    )
+            except Exception as exc:
+                msg = f"Memory extraction failed: {exc}"
+                report.errors.append(msg)
+                logger.exception(msg)
 
         # Task 1: Memory consolidation
         if self.config.enable_consolidation:
@@ -234,6 +303,17 @@ class SleepCycleRunner:
                 logger.info("Checkpoint saved: %s", checkpoint_path)
             except Exception as exc:
                 msg = f"Checkpoint save failed: {exc}"
+                report.errors.append(msg)
+                logger.exception(msg)
+
+        # Task 5: Conversation log cleanup
+        if self.conversation_log is not None:
+            try:
+                report.log_cleanup_deleted = self.conversation_log.cleanup_old(
+                    days=self.config.log_retention_days,
+                )
+            except Exception as exc:
+                msg = f"Log cleanup failed: {exc}"
                 report.errors.append(msg)
                 logger.exception(msg)
 

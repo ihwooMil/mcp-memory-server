@@ -50,6 +50,7 @@ class MemoryNode:
     level2_text: str = ""
     active: bool = True
     pinned: bool = False
+    extraction_source: str = ""  # "heuristic", "rl", "auto", or "" (manual)
 
 
 class GraphMemoryStore:
@@ -97,6 +98,7 @@ class GraphMemoryStore:
         level1_text: str = "",
         level2_text: str = "",
         pinned: bool = False,
+        extraction_source: str = "",
     ) -> str:
         """Add a new memory node. Returns the generated memory_id.
 
@@ -128,6 +130,7 @@ class GraphMemoryStore:
             "level2_text": level2_text,
             "active": "true",
             "pinned": "true" if pinned else "false",
+            "extraction_source": extraction_source,
         }
         if source_turn_id is not None:
             metadata["source_turn_id"] = source_turn_id
@@ -507,4 +510,5 @@ def _meta_to_node(
         level2_text=metadata.get("level2_text", ""),
         active=metadata.get("active", "true") == "true",
         pinned=metadata.get("pinned", "false") == "true",
+        extraction_source=metadata.get("extraction_source", ""),
     )

@@ -20,6 +20,7 @@ Current AI memory tools have two critical problems:
 | Problem | How we solve it |
 |---------|----------------|
 | **Manual retrieval** — you must ask "do you remember X?" | `auto_search` runs every turn, injecting relevant memories automatically |
+| **Missed memories** — AI decides what to save, so experiences/stories get lost | Every turn is auto-logged; sleep cycle extracts what the AI missed |
 | **Token waste** — entire memory dump inserted into context | Multi-resolution composer selects top-K memories within a token budget |
 
 ## Key Features
@@ -30,8 +31,11 @@ Current AI memory tools have two critical problems:
 - **GraphRAG hybrid retrieval** — Vector similarity + graph traversal, fused and re-ranked by an RL re-ranker
 - **Auto-linking** — New memories automatically link to similar existing ones (similarity ≥ 0.92)
 - **Multi-resolution text** — Full text → summary → entity triples, composed within token budget
+- **Automatic conversation logging** — All turns recorded to SQLite; high-value turns instantly extracted to ChromaDB
+- **Sleep cycle memory extraction** — Batch-processes missed memories from conversation logs using progressive RL extraction
+- **Auto category classification** — `memory_save` auto-classifies content category from patterns
 - **Forgetting pipeline** — Decay-based aging with consolidation, pinning, and immutable protection
-- **Sleep cycle** — Periodic maintenance: dedup, compress, forget, checkpoint
+- **Sleep cycle** — Periodic maintenance: extraction, dedup, compress, forget, checkpoint
 - **Live graph** — Real-time WebSocket visualization of the memory graph
 - **Multilingual** — Korean and English pattern support out of the box
 
@@ -215,7 +219,7 @@ Open `http://127.0.0.1:8765` in a browser. Requires the `[live]` extra (`pip ins
 | `memory_pin` / `memory_unpin` | Protect memories from forgetting |
 | `memory_stats` | Total count and category breakdown |
 | `memory_visualize` | Generate interactive graph HTML |
-| `sleep_cycle_run` | Trigger maintenance (consolidation + forgetting + checkpoint) |
+| `sleep_cycle_run` | Trigger maintenance (extraction + consolidation + forgetting + checkpoint) |
 | `policy_status` | RL policy state (epsilon, action distribution, updates) |
 | `policy_decide` | Ask the RL policy for a SAVE/SKIP/RETRIEVE decision with reasoning |
 
@@ -243,7 +247,7 @@ All settings via environment variables:
 ```
 ┌─────────────────────────────────────────────────┐
 │                   MCP Client                     │
-│          (Claude Desktop / Claude Code)          │
+│     (Claude Desktop / Claude Code / OpenClaw)    │
 └────────────────────┬────────────────────────────┘
                      │ stdio (JSON-RPC)
 ┌────────────────────▼────────────────────────────┐
@@ -254,12 +258,12 @@ All settings via environment variables:
 │ RL Policy│ Retrieval│ Storage  │ Maintenance      │
 │          │          │          │                  │
 │ Rule-    │ ChromaDB │ Graph    │ Sleep Cycle      │
-│ Based +  │ vector + │ Memory   │ (consolidation,  │
-│ MLP      │ Knowledge│ Store    │  forgetting,     │
-│ Bandit   │ Graph    │          │  checkpoints)    │
-│          │ (GraphRAG)│         │                  │
-│ Re-ranker│          │          │                  │
-│ (11d MLP)│          │          │                  │
+│ Based +  │ vector + │ Memory   │ (extraction,     │
+│ MLP      │ Knowledge│ Store    │  consolidation,  │
+│ Bandit   │ Graph    │          │  forgetting,     │
+│          │ (GraphRAG)│         │  checkpoints)    │
+│ Re-ranker│          │ SQLite   │                  │
+│ (11d MLP)│          │ Conv Log │ Extraction RL    │
 └──────────┴──────────┴──────────┴─────────────────┘
          ↕ WebSocket (cross-process)
 ┌──────────────────────────────────────────────────┐
